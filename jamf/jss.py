@@ -11,6 +11,7 @@ import json
 import pprint
 
 from . import cache
+from . import convert
 
 __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
@@ -27,13 +28,6 @@ class APIError(Error):
     pass
 
 
-class TestError(Error):
-    def __init__(self, response, *args):
-        Error.__init__(self, *args)
-        self.code = response.status_code
-        self.url = response.url
-
-
 class JSS(object):
     """
     Class for making api calls to JSS
@@ -42,7 +36,8 @@ class JSS(object):
         self.log = logging.getLogger(f"{__name__}.JSS")
         self.url = f"https://{address}:8443/JSSResource"
         self.session = requests.Session()
-        self.session.headers.update({'Accept': 'application/json',
+        self.session.headers.update({#'Accept': 'application/json',
+                                     'Accept': 'application/xml',
                                      'Content-Type': 'application/xml'})
         if auth:
             # auth must be a tuple
@@ -54,19 +49,19 @@ class JSS(object):
         :returns dict:      response data
         """
         url = f"{self.url}/{endpoint}"
-        self.log.info(f"getting: {endpoint!r}")                
+        self.log.info(f"getting: {endpoint!r}")
         response = self.session.get(url)
         # self.log.debug(f"RESPONSE: {dump_object(response)}")
         if response.status_code != 200:
             err = f"GET failed: {response.status_code} {url}\n{response.text}"
             self.log.error(err)
             raise APIError(err)
-        # return response.text
+
         try:
+            # self.log.debug(f"TEXT: {response.text}")
             return response.json()
         except json.decoder.JSONDecodeError:
-            self.log.error(f"invalid JSON: {response.text}")
-            raise
+            return convert.xml_to_dict(response.text)
     
     def post(self, endpoint, data):
         url = f"{self.url}/{endpoint}"
@@ -102,34 +97,34 @@ class JSS(object):
 #         pass
 
 
-class JSSObject(object):
-    
-    def __init__(self, data):
-        self._data = data
-        self._id = data['id']
-        self._name = data['name']
-        self._modified = False
-    
-    @property
-    def jssid(self):
-        return self._id
-    
-    @property
-    def modified(self):
-        return self._modified
-    
-    @property
-    def name(self):
-        return self._name
-    
-    @name.setter
-    def name(self, string):
-        self._modified = True
-        self._name = string
-
-    @property
-    def xml(self):
-        return xml_from_dict(self._data)
+# class JSSObject(object):
+#     
+#     def __init__(self, data):
+#         self._data = data
+#         self._id = data['id']
+#         self._name = data['name']
+#         self._modified = False
+#     
+#     @property
+#     def jssid(self):
+#         return self._id
+#     
+#     @property
+#     def modified(self):
+#         return self._modified
+#     
+#     @property
+#     def name(self):
+#         return self._name
+#     
+#     @name.setter
+#     def name(self, string):
+#         self._modified = True
+#         self._name = string
+# 
+#     @property
+#     def xml(self):
+#         return xml_from_dict(self._data)
 
 
 def xml_from_dict(data):
@@ -149,12 +144,12 @@ def xml_from_dict(data):
     return xml_str
       
 
-def dump_object(obj):
-    _data = {}
-    for k in dir(obj):
-        _data[k] = getattr(obj, k)
-    return _data
-
+# def dump_object(obj):
+#     _data = {}
+#     for k in dir(obj):
+#         _data[k] = getattr(obj, k)
+#     return _data
+# 
 
 
 if __name__ == '__main__':

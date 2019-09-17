@@ -155,7 +155,7 @@ class AppPolicy(Policy):
     specialized Policy for applications
     """
     def __init__(self, name):
-        self
+        pass
 
 
 def update_patch_management(jss, jssid, policy, ver, pkg):
@@ -166,7 +166,9 @@ def update_patch_management(jss, jssid, policy, ver, pkg):
     
 
 def create_patch_policies(jss, titleID, appname, stable, beta=None, latest=None):
-
+    """
+    Create new Patch Policies from template with existing SoftwareTitle
+    """
     policy = jss.get(f"policies/name/{appname}")
     # pprint.pprint(policy)
     # raise SystemExit()
@@ -266,33 +268,18 @@ def main():
     address = config['address']
     jss = jamf.JSS(address, auth=auth)
     
-    create_patch_policies(jss, 76, 'Suspicious Package', '3.5.1')
+    ## Used to create new patch policies for existing SoftwareTitle()
+    # create_patch_policies(jss, 77, 'NVivo', '12.2.0')
     
-    # result = software_titles(jss)
-    # result = kinobi_definitions(jss)
+
+    ## patch.SoftwareTitles()
+    # titles = jamf.patch.SoftwareTitles(jss)
+    # pprint.pprint(titles.titles)
+    
+    ## looks for Patch Software Title with specified name
+    # result = titles.find('Google Chrome')
     # pprint.pprint(result)
-    
-#     switch_id = 61
-#     name = 'Switch'
-#     version = '6.50'
-# 
-#     auto = 'general':{'name': f"{scope} - {name}",
-#                           'target_version': version},
-#                'scope': {'computer_groups':{'computer_group':{'name': 'Staging - Tech Boxes'}}}
-#                           }
-#     minimal = {'general':{'name': f"Tech - Test Boxes - {name}",
-#                           'target_version': version},
-#                'scope': {'computer_groups':{'computer_group':{'name': 'Staging - Tech Boxes'}}}
-#                           }
-    # create_patch_policy(jss, 61, {'patch_policy': minimal})
-    
-    # policies = list_patchpolicies(jss, '')
-    # update_patch_polices_named(jss, 'Guinea Pig - Staff', {'patch_policy': STAFF})
-    # example_self_service(jss)
-    # result = jss.get('patchpolicies/id/182')
-    # pprint.pprint(result)
-    
-    # update_patch_policies(jss, TEMPLATE)
+
         
 
 if __name__ == '__main__':
