@@ -38,7 +38,16 @@ STAGING = {'Tech': {'Main Boxes': {'id': 230,
                               'name': 'Staging - Stable - Lab'},
                       'Staff': {'id': 233,
                                 'name': 'Staging - Stable - Staff'}}}
-                              
+
+## TO-DO:
+    # Policy Updating
+    # - description testing
+    # - report blank descriptions
+    # - parse and add version               
+
+    # Patch Policy Version Updates
+
+    # Package workflows               
 
 class Error(Exception):
     pass
@@ -53,7 +62,7 @@ def patch_policies(jss):
     return jss.get('patchpolicies')['patch_policies']
 
 
-def all_packages(jss):
+def packages(jss):
     """
     :returns: list of dictionaries for all packages on JSS
     """
@@ -62,10 +71,6 @@ def all_packages(jss):
     #  'name']   # <str> name of package
     # return jss.get('packages', xml=True)['packages']['package']
     return jss.get('packages')['packages']
-
-
-def policy(jss, name):
-    return jss.get(f"/policies/name/{name}")    
 
 
 ## EXPERIMENTAL
@@ -85,109 +90,79 @@ def patch_title(jss, name):
     return defintion
 
 
-## replaced with 'find_patch_definition()'
-# def kinobi_definitions(jss, name=None):
-#     """
-#     :param name:  if specified, only returns patch defintion with name
-#     :returns: 
-#     """
-#     endpoint = f"patchavailabletitles/sourceid/{jamf.KINOBI}"
-#     result = jss.get(endpoint, xml=True)['patch_available_titles']
-#     titles = result['available_titles']['available_title']
-# 
-#     if not name:
-#         return titles
-#     else:
-#         return [x for x in titles if x['app_name'] == name]
-
-
 def find_patch_definition(jss, name, source=jamf.KINOBI):
+    """
+    :param jss:     JSS API object
+    :param name:    name of external patch definition
+    :param source:  source ID of external patch server (default: jamf.KINOBI) 
+
+    :returns:       external patch definition by name
+    """
     logger = logging.getLogger(__name__)
-    logger.info(f"looking for definition: {name!r} (source: {source})")
+    logger.info(f"looking for external definition: {name!r}")
+    logger.debug(f"patch source ID: {source}")
     endpoint = f"patchavailabletitles/sourceid/{source}"
     result = jss.get(endpoint, xml=True)['patch_available_titles']
     all_titles = result['available_titles']['available_title']
     for title in all_titles:
         if name == title['app_name']:
-            logger.debug(f"found definition: {title['name_id']})")
+            logger.debug(f"found definition ID: {title['name_id']!r})")
             return title
     raise Error(f"missing patch definition: {name!r}")
 
 
 def find_software_title(jss, name, details=True):
     """
-    :returns: patch software title by name
+    :param jss:         JSS API object
+    :param name:        name of software title
+    :param details:     if False, return simple (id + name) (default: True)
+
+    :returns:           patch software title information
     """
+    logger = logging.getLogger(__name__)
+    logger.info(f"looking for existing software title: {name}")
     # Iterate all Patch Management Titles for specified matching name
     data = jss.get('patchsoftwaretitles', xml=True)['patch_software_titles']
     for title in data['patch_software_title']:
         if title['name'] == name:
+            logger.debug(f"found title: {name!r}")
             if details:
+                logger.debug("returning detailed title info")
                 jssid = title['id']
                 return jss.get(f"patchsoftwaretitles/id/{jssid}", xml=True)
             else:
+                logger.debug("returning simple title info")
                 return title
     raise Error(f"missing software title: {name!r}")
 
 
-# def create_patch_policies_draft(jss, appname):
-#     """
-#     create patch policies from existing policy
-#     """
-#     # look for existing policy
-#     policy = jss.get(f"policies/name/{appname}", xml=True)['policy']
-#     general = policy['general']
-#     jssid = general['id']
-#     category = general['category']
-#     pkg = policy['package_configuration']['packages']['package']
-#     packages = policy['package_configuration']['packages']
-#     
-#     # NOTE: this is underdeveloped garbage
-#     if int(packages['size']) != 1:
-#         for pkg in packages['package']:
-#             # {'id': pkg['id'], 'name': pkg['name']}
-#             pass
-#     else:
-#         # small subset
-#         pkg = {k:v for k,v in packages['package'] if k in ('id', 'name')}
+def new_softwaretitle(jss, name, category=None, source=jamf.KINOBI):
+    """
+    :param jss:         JSS API object
+    :param name:        name of software title
+    :param category:    dict of category to assign new title (id &| name)
+    :param source:      source ID of external patch server 
+                            (default: jamf.KINOBI) 
 
-
-def new_softwaretitle(jss, name, category, source=jamf.KINOBI):
-
+    :returns:           newly created patch software title
+    """
     logger = logging.getLogger(__name__)
     logger.info(f"creating new software title: {name}")
 
-    patch = find_patch_definition(jss, name)
+    patch = find_patch_definition(jss, name, source)
     template = {'patch_software_title': {'name': name,
                                          'name_id': patch['name_id'],
-                                         'source_id': source,
-                                         'category': category}}
+                                         'source_id': source}}
+    # assign category (if specified)
+    if category:
+        template['patch_software_title']['category'] = category
+
     logger.debug(f"template: {template!r}")
     new = jss.post('patchsoftwaretitles/id/0', template)
-    # JSS ID of newly created Patch Software Title
+    # ID of newly created Patch Software Title
     jssid = new['patch_software_title']['id']
-    logger.info(f"successfully created software title: {name} (ID: {jssid})")
+    logger.debug(f"created software title: {name!r} (ID:{jssid})")
     return jss.get(f"patchsoftwaretitles/id/{jssid}", xml=True)
-
-
-# def new_softwaretitle_old(jss, name, name_id, source_id=jamf.KINOBI):
-#     """
-#     Create new Patch Software Title
-#     
-#     :param name:        Display name of Patch Management Title
-#     :param name_id:     Unique name ID of external patch definition
-#     :param source_id:   External source id
-# 
-#     :returns: ID of newly created Patch Software Title 
-#     """
-#     # TO-DO: error handling
-#     # base template (had errors when populating packages and category)
-#     template = {'patch_software_title': {'name': name,
-#                                          'source_id': source_id, 
-#                                          'name_id': name_id}}
-# 
-#     new = jss.post('patchsoftwaretitles/id/0', template)
-#     return new['patch_software_title']['id']
 
 
 def update_softwaretitle_packages(jss, jssid, pkgs):
@@ -630,26 +605,50 @@ def installer_packages():
     pprint.pprint(info)
 
         
-def new_management_title_workflow(jss):
+def new_management_title_workflow_example(jss):
     """
     works for creating new patches
     """
-#     name = 'calibre'
-#     pkgs = {'3.47.1': 'calibre_3.47.1_2019.09.04_rcg.pkg',
-#             '3.48.0': 'calibre_3.48.0_2019.09.19_rcg.pkg'}
-#     new_patch(jss, name, pkgs, '3.47.1', '3.48.0')
-
-#     name = 'MuseScore 3'
-#     pkgs = {'3.2.3': 'musescore_3_3.2.3.22971_2019.09.04_rcg.pkg'}
-#     new_patch(jss, name, pkgs, '3.2.3')
-
-#     name = 'Mendeley Desktop'
-#     pkgs = {'1.19.4': 'mendeley_desktop_1.19.4_2019.09.04_rcg.pkg'}
-#     new_patch(jss, name, pkgs, '1.19.4')
-
-#     name = 'ATLAS.ti'
-#     pkgs = {'8.4.4': 'atlas_8.4.4_2019.09.17_rcg.pkg'}
-#     new_patch(jss, name, pkgs, '8.4.4')
+    # name = 'calibre'
+    # pkgs = {'3.47.1': 'calibre_3.47.1_2019.09.04_rcg.pkg',
+    #         '3.48.0': 'calibre_3.48.0_2019.09.19_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '3.47.1', '3.48.0')
+    # 
+    # name = 'MuseScore 3'
+    # pkgs = {'3.2.3': 'musescore_3_3.2.3.22971_2019.09.04_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '3.2.3')
+    # 
+    # name = 'Mendeley Desktop'
+    # pkgs = {'1.19.4': 'mendeley_desktop_1.19.4_2019.09.04_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '1.19.4')
+    # 
+    # name = 'ATLAS.ti'
+    # pkgs = {'8.4.4': 'atlas_8.4.4_2019.09.17_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '8.4.4')
+    # 
+    # name = 'Evernote'
+    # pkgs = {'7.13': 'evernote_7.13_2019.09.24_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '7.13')
+    #
+    # name = 'Scratch Desktop'
+    # pkgs = {'3.6.0': 'scratch_desktop_3.6.0_2019.09.27_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '3.6.0')
+    # 
+    # name = 'Final Cut Pro'
+    # pkgs = {'10.4.6': 'final_cut_pro_10.4.6_2019.09.20_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '10.4.6')
+    # 
+    # name = 'Motion'
+    # pkgs = {'5.4.3': 'motion_5.4.3_2019.09.20_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '5.4.3')
+    # 
+    # name = 'Camtasia 3'
+    # pkgs = {'3.1.5': 'camtasia_3_3.1.5_2019.09.20_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '3.1.5')
+    # 
+    # name = 'OmniFocus'
+    # pkgs = {'3.4.2': 'omnifocus_3.4.2_2019.09.19_rcg.pkg'}
+    # new_patch(jss, name, pkgs, '3.4.2')
 
 
 ## MAIN
@@ -658,13 +657,7 @@ def main():
     address, auth = config('private/jss.plist')
     jss = jamf.JSS(address, auth=auth)
         
-    ## clunky all in one patch creation 
-    #  - requires existing app policy
-    #  - does not gracefully handle pre-existing patch-policies
-    # appname = None
-    # pkgs = {}
-    # all_in_one_patch(jss, appname)
-
+    new_management_title_workflow(jss)
 
 
 if __name__ == '__main__':
