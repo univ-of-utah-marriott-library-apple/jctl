@@ -16,8 +16,15 @@ __copyright__ = 'Copyright (c) 2019 University of Utah, Marriott Library'
 __license__ = 'MIT'
 __version__ = "0.0.0"
 
+class Error(Exception):
+    pass
 
-class DefinitionError(Exception):
+
+class DefinitionError(Error):
+    pass
+
+
+class MissingTitleError(Error):
     pass
 
 
@@ -87,7 +94,6 @@ class Exclusion(Grouping):
         pass
 
 
-
 class PatchPolicy(object):
     
     def __init__(self, jss):
@@ -130,7 +136,8 @@ class SoftwareTitles():
                 jssid = title['id']
                 info = self.jss.get(f"patchsoftwaretitles/id/{jssid}")
                 return info['patch_software_title']
-  
+
+
 class Version(object):
 
     def __init__(self, pkg=None):
@@ -162,8 +169,9 @@ def parse_pkg_name(pkg):
     >>> parse_pkg_name('name_of_app_1.0_2019.09.18_swf.pkg')
     'name_of_app', '1.0', '2019.09.18', 'swf'
     """
+
     # remove the extension until we get to the proper basename
-    while 'pkg' in pkg:
+    while 'pkg' in pkg: 
         pkg = os.path.splitext(name)[0]
     *name, version, date, initials = pkg.split('_')
     return "_".join(name), version, date, initials
@@ -253,7 +261,7 @@ class AvailableTitles(object):
         self.log = logging.getLogger(f"{__name__}.AvailableTitles")
         self.jss = jss
         self.sourceid = sourceid
-        self._titles = None
+        self._titles = []
     
     @property
     def titles(self):
@@ -262,24 +270,19 @@ class AvailableTitles(object):
         """
         if not self._titles:
             self.log.info("updating patch definitions")
-            # current headers
-            _headers = self.jss.session.headers
-            # json doesn't seem to work with 'patchavailabletitles'
-            self.jss.session.headers.update({'Accept': 'application/xml'})
+            headers = {'Accept': 'application/xml'}
             endpoint = f"patchavailabletitles/sourceid/{self.sourceid}"
-            result = self.jss.get(endpoint)
-            # restore previous headers
-            self.jss.session.headers = _headers
-            titles = convert.xml_to_dict(result)['patch_available_titles']
+            result = self.jss.get(endpoint, headers=headers)
+            self.log.debug(f"result: {result}")
+            titles = result['patch_available_titles']
             self._titles = titles['available_titles']['available_title']
         return self._titles
 
     def find(self, name):
         for title in self.titles:
             if name == title['app_name']:
-                # return TitleDefinition(title)
                 return title
-        raise DefinitionError(f"missing definition: {name}")
+        raise MissingTitleError(f"missing definition: {name}")
 
 
 if __name__ == '__main__':

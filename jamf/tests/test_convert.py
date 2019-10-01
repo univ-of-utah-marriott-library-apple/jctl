@@ -5,7 +5,7 @@
 import unittest
 import pprint
 from .. import convert
-from .. import Patch
+# from .. import Patch
 
 patchpolicies = '''<?xml version="1.0" encoding="UTF-8"?>
 <patch_available_titles>
@@ -344,75 +344,212 @@ patchpolicies = '''<?xml version="1.0" encoding="UTF-8"?>
 </patch_available_titles>
 '''
 
-
-class BaseTestCase(unittest.TestCase):
-    pass
-
-
-class TestXMLToDict(BaseTestCase):
-    pass
-
-
 @unittest.skip
-class TestDictToXML(BaseTestCase):
+class ConversionTestOLD(unittest.TestCase):
     
     def setUp(self):
-        # self.expected = {}
-        pass
-
-    def test_list(self):
-        raise NotImplementedError()
-
-    def test_simple(self):
-        raise NotImplementedError()
-
-    def test_complex(self):
-        raise NotImplementedError()
-
-    def test_nested_list_of_dicts(self):
-        raise NotImplementedError()
-
-
-class TestPatchPolicies(BaseTestCase):
+        self.xml = '<empty></empty>'
+        self.data = {'empty': {}}
     
-    def setUp(self):
-        self.xml = patchpolicies
-    
-    def test_convert(self):
+    def test_xml_to_dict(self):
+        """
+        test conversion of xml string to dict 
+        """
+        expected = self.data
         result = convert.xml_to_dict(self.xml)
-        pprint.pprint(result)
+        self.assertEqual(expected, result)
+
+    def test_dict_to_xml(self):
+        """
+        test conversion of dict to xml string
+        """
+        expected = self.xml
+        result = convert.dict_to_xml(self.data)
+        self.assertEqual(expected, result)
+
+    def test_dict_reconvert(self):
+        """
+        test dict -> xml -> dict
+        """
+        _xml = convert.dict_to_xml(self.data)
+        result = convert.xml_to_dict(_xml)
+        expected = self.data
+        self.assertEqual(expected, result)
+
+    def test_xml_reconvert(self):
+        """
+        test xml -> dict -> xml
+        """
+        _dict = convert.xml_to_dict(self.xml)
+        result = convert.dict_to_xml(_dict)
+        expected = self.xml
+        self.assertEqual(expected, result)
 
 
-LIST = '''<list>
-  <item>1</item>
-  <item>2</item>
-  <item>3</item>
-</list>
-'''
+class ConversionTest(unittest.TestCase):
+    
+    def setUp(self):
+        self.xml = '<empty></empty>'
+        self.data = {'empty': {}}
+    
+    def test_xml_to_dict(self):
+        """
+        test conversion of xml string to dict 
+        """
+        expected = self.data
+        result = convert.xml_to_dict(self.xml)
+        self.assertEqual(expected, result)
 
-DICT = '''
-<record>
-  <id>1</id>
-  <items>
-    <item>
-      <id>1</id>
-      <name>one</name>
-      <int>1</int>
-    </item>
-    <item>
-      <id>2</id>
-      <name>two</name>
-      <int>2</int>
-    </item>
-    <item>
-      <id>3</id>
-      <name>three</name>
-      <int>3</int>
-    </item>
-  </items>
-</record>
-'''
+    def test_dict_to_xml(self):
+        """
+        test conversion of dict to xml string
+        """
+        expected = self.xml
+        result = convert.dict_to_xml(self.data)
+        self.assertEqual(expected, result)
 
+    def test_dict_reconvert(self):
+        """
+        test dict -> xml -> dict
+        """
+        _xml = convert.dict_to_xml(self.data)
+        result = convert.xml_to_dict(_xml)
+        expected = self.data
+        self.assertEqual(expected, result)
+
+    def test_xml_reconvert(self):
+        """
+        test xml -> dict -> xml
+        """
+        _dict = convert.xml_to_dict(self.xml)
+        result = convert.dict_to_xml(_dict)
+        expected = self.xml
+        self.assertEqual(expected, result)
+
+
+class TestSimpleDict(ConversionTest):
+
+    def setUp(self):
+        self.xml = '<test><key>value</key></test>'
+        self.data = {'test': {'key': 'value'}}
+
+
+class TestSimpleList(ConversionTest):
+    
+    def setUp(self):
+        self.xml = ('<list>'
+                      '<item>one</item>'
+                      '<item>two</item>'
+                      '<item>three</item>'
+                    '</list>')
+        self.data = {'list': {'item': ['one', 'two', 'three']}}
+        
+
+class TestListOfDicts(ConversionTest):
+    
+    def setUp(self):
+        self.xml = ('<list>'
+                      '<item>'
+                        '<id>1</id>'
+                        '<name>one</name>'
+                      '</item>'
+                      '<item>'
+                        '<id>2</id>'
+                        '<name>two</name>'
+                      '</item>'
+                      '<item>'
+                        '<id>3</id>'
+                        '<name>three</name>'
+                      '</item>'
+                    '</list>')
+        self.data = {'list': {'item': [{'id': '1', 'name': 'one'}, 
+                                       {'id': '2', 'name': 'two'},
+                                       {'id': '3', 'name': 'three'}]}}
+
+#@unittest.skip
+class TestPatchSoftwareTitle(ConversionTest):
+    """
+    Too difficult to test
+
+    We can't guarantee the ordering of strings when converting 
+    from a dictionary to xml string, so even though the values are identical,
+    string comparison fails
+    """ 
+    def setUp(self):
+        self.maxDiff = None
+        self.xml = ('<patch_software_title>'
+                      '<id>31</id>'
+                      '<name>Mozilla Firefox</name>'
+                      '<name_id>MozillaFirefox</name_id>'
+                      '<source_id>2</source_id>'
+                      '<notifications>'
+                        '<email_notification>true</email_notification>'
+                        '<web_notification>true</web_notification>'
+                      '</notifications>'
+                      '<category>'
+                        '<id>1</id>'
+                        '<name>Apps - Web Browsers</name>'
+                      '</category>'
+                      '<site>'
+                        '<id>-1</id>'
+                        '<name>None</name>'
+                      '</site>'
+                      '<versions>'
+                        '<version>'
+                          '<software_version>69.0.1</software_version>'
+                          '<package>'
+                            '<id>284</id>'
+                            '<name>firefox_69.0.1_2019.09.18_rcg.pkg</name>'
+                          '</package>'
+                        '</version>'
+                        '<version>'
+                          '<software_version>69.0</software_version>'
+                          '<package>'
+                            '<id>253</id>'
+                            '<name>firefox_69.0_2019.09.04_rcg.pkg</name>'
+                          '</package>'
+                        '</version>'
+                        '<version>'
+                          '<software_version>68.0.2</software_version>'
+                          '<package>'
+                            '<id>182</id>'
+                            '<name>firefox_68.0.2_2019.08.20_rcg.pkg</name>'
+                          '</package>'
+                        '</version>'
+                        '<version>'
+                          '<software_version>68.0.1</software_version>'
+                          '<package>'
+                            '<id>121</id>'
+                            '<name>firefox_68.0.1_2019.07.22_rcg.pkg</name>'
+                          '</package>'
+                        '</version>'
+                      '</versions>'
+                    '</patch_software_title>')
+        self.data = {'patch_software_title': {'category': {'id': '1',
+                                                           'name': 'Apps - Web Browsers'},
+                                              'id': '31',
+                                              'name': 'Mozilla Firefox',
+                                              'name_id': 'MozillaFirefox',
+                                              'notifications': {'email_notification': 'true',
+                                                                'web_notification': 'true'},
+                                              'site': {'id': '-1', 'name': 'None'},
+                                              'source_id': '2',
+                                              'versions': {'version': [{'package': {'id': '284',
+                                                                                    'name': 'firefox_69.0.1_2019.09.18_rcg.pkg'},
+                                                                        'software_version': '69.0.1'},
+                                                                       {'package': {'id': '253',
+                                                                                    'name': 'firefox_69.0_2019.09.04_rcg.pkg'},
+                                                                        'software_version': '69.0'},
+                                                                       {'package': {'id': '182',
+                                                                                    'name': 'firefox_68.0.2_2019.08.20_rcg.pkg'},
+                                                                        'software_version': '68.0.2'},
+                                                                       {'package': {'id': '121',
+                                                                                    'name': 'firefox_68.0.1_2019.07.22_rcg.pkg'},
+                                                                        'software_version': '68.0.1'}]}}}
+        # pprint.pprint(convert.dict_to_xml(self.xml))
+    @unittest.skip("key ordering causes incorrect failure")
+    def test_dict_to_xml(self):
+        pass
 
 
 if __name__ == '__main__':
