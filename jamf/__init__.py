@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .jss import JSS
+from .api import API
 from . import patch
 # from . import convert
 
