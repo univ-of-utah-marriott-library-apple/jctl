@@ -4,6 +4,12 @@
 XML and JSON data conversion functions
 """
 
+__author__ = 'Sam Forester'
+__email__ = 'sam.forester@utah.edu'
+__copyright__ = 'Copyright (c) 2019 University of Utah, Marriott Library'
+__license__ = 'MIT'
+__version__ = "0.2.1"
+
 import os
 import logging
 
@@ -46,7 +52,7 @@ def etree_to_dict(x):
     adapted from: https://stackoverflow.com/a/10077069/12020818
     removed attribute support
     """
-    result = {x.tag: {}}
+    result = {x.tag: None}
     children = list(x)
     if children:
         dd = defaultdict(list)
@@ -56,6 +62,7 @@ def etree_to_dict(x):
         result = {x.tag: {k:v[0] if len(v) == 1 else v for k, v in dd.items()}}
     elif x.text:
         result[x.tag] = x.text.strip()
+            
     return result
 
 
@@ -66,7 +73,9 @@ def dict_to_xml(data):
     if isinstance(data, dict):
         xml_str = ''
         for key, value in data.items():
-            if isinstance(value, list):
+            if value is None:
+                xml_str += f"<{key}/>"
+            elif isinstance(value, list):
                 # if the value is a list, wrap each entry with the key
                 for i in value:
                     result = dict_to_xml(i)

@@ -389,8 +389,8 @@ class ConversionTestOLD(unittest.TestCase):
 class ConversionTest(unittest.TestCase):
     
     def setUp(self):
-        self.xml = '<empty></empty>'
-        self.data = {'empty': {}}
+        self.xml = '<nothing/>'
+        self.data = {'nothing': None}
     
     def test_xml_to_dict(self):
         """
@@ -466,7 +466,8 @@ class TestListOfDicts(ConversionTest):
                                        {'id': '2', 'name': 'two'},
                                        {'id': '3', 'name': 'three'}]}}
 
-#@unittest.skip
+
+@unittest.skip
 class TestPatchSoftwareTitle(ConversionTest):
     """
     Too difficult to test
@@ -547,6 +548,7 @@ class TestPatchSoftwareTitle(ConversionTest):
                                                                                     'name': 'firefox_68.0.1_2019.07.22_rcg.pkg'},
                                                                         'software_version': '68.0.1'}]}}}
         # pprint.pprint(convert.dict_to_xml(self.xml))
+    
     @unittest.skip("key ordering causes incorrect failure")
     def test_dict_to_xml(self):
         pass
