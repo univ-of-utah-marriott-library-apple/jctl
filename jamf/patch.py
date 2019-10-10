@@ -285,5 +285,21 @@ class AvailableTitles(object):
         raise MissingTitleError(f"missing definition: {name}")
 
 
+def notification(name, version, desc, icon, defer, grace, nc=False):
+    pass
+
+
+class Notification(object):
+    
+    def __init__(self, policy, desc, deadline, grace_period=60):
+        self.deadline = deadline
+        self.grace_period = grace_period
+        self.interaction = {'self_service_icon': {'id': icon_id},
+                            'deadlines': {'deadline_enabled': True,
+                                          'deadline_period': deferral}}
+    def data(self):
+        pass
+
+
 if __name__ == '__main__':
     pass
