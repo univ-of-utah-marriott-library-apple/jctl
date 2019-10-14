@@ -43,7 +43,7 @@ class Version(object):
 
 
 
-class PackageOrig():
+class PackageOrig(object):
     
     def __init__(self, jssid, name):
         self.jssid = jssid
@@ -76,14 +76,14 @@ def parse_pkg_name(name):
     return "_".join(name), version, date, initials
     
 
-def packages(jss):
+def packages(api):
     """
     :returns: list of dictionaries for all packages on JSS
     """
     # Each entry is dict containing the following keys:
     # ['id',     # <int>  JSS id
     #  'name']   # <str> name of package
-    return jss.get('packages')['packages']['package']
+    return api.get('packages')['packages']['package']
 
 
 def installer_packages():
