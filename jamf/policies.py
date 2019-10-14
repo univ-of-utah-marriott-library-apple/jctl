@@ -251,6 +251,37 @@ def verify_policy(policy):
     # raise NotImplementedError("not finished")
 
 
+def verification(jss, name, category, icon, pkgs, schema):
+    """
+    verification of entire stack
+    """
+
+    # App Policy
+    #  - exists
+    #  - category
+    #  - scope
+    #  - package
+    #  - self service
+    #   - icon
+    #   - notifications
+        # create app policy if missing
+    
+    # Package Verification
+    #  - exists
+
+    # External Patch Definition
+    
+    # Patch Software Title
+    #   package
+    #   version
+    #   category
+    
+    # Patch Policies
+
+    # Additional
+    pass
+
+
 def add_notify_script(api, jssid, modify=True):
     endpoint = f"policies/id/{jssid}"
     policy = api.get(endpoint)['policy']
