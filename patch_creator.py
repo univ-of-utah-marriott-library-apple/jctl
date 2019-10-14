@@ -328,7 +328,6 @@ def main():
     # pprint.pprint(result)
     
     # curl -s -H "authorization: Basic ${credentials}" -X "POST" -F name=@"path/to/the/icons/folder/${icons}" "${jps}/JSSResource/fileuploads/policies/id/${policy_id}"
-    # curl -s -H "authorization: Basic YXBpc2FtOkxldHNzZWV3aGF0dGhpc2JhYnljYW5kbwo=" -X "POST" -F name=@"calibre.png" "https://casper.scl.utah.edu:8443/JSSResource/fileuploads/policies/id/440"
     
     ## requirements
     #   - Existing Patch Software Title

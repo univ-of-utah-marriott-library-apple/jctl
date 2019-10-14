@@ -39,6 +39,7 @@ STAGING = {'Tech': {'Main Boxes': {'id': 230,
                       'Staff': {'id': 233,
                                 'name': 'Staging - Stable - Staff'}}}
 
+#NOTE: this should be imported externally
 PATCH_TEMPLATES = {
     'Adobe Flash Player': [{'name': 'Tech',
                             'method': 'prompt'},
@@ -66,7 +67,8 @@ DEFAULT_PATCH = [{'name': 'Tech - Test Boxes',
                   'method': 'prompt'},
                  {'name': 'Stable - Staff',
                   'method': 'selfservice'}]
-## TO-DO:
+
+# TO-DO:
     # Policy Updating
     # - description testing
     # - report blank descriptions
@@ -75,6 +77,7 @@ DEFAULT_PATCH = [{'name': 'Tech - Test Boxes',
     # Patch Policy Version Updates
 
     # Package workflows               
+
 
 class Error(Exception):
     pass
@@ -86,11 +89,11 @@ def patch_policies(jss, name=None):
     """
     :returns: list of all patch policies 
     """
-    policies = jss.get('patchpolicies')['patch_policies']['patch_policy']
+    _policies = jss.get('patchpolicies')['patch_policies']['patch_policy']
     if name is not None:
-        return [x for x in policies if name in x['name']]
+        return [x for x in _policies if name in x['name']]
     else:
-        return policies
+        return _policies
 
 
 def packages(jss):
@@ -100,8 +103,46 @@ def packages(jss):
     # Each entry is dict containing the following keys:
     # ['id',     # <int>  JSS id
     #  'name']   # <str> name of package
-    # return jss.get('packages')['packages']['package']
-    return jss.get('packages')['packages']
+    return jss.get('packages')['packages']['package']
+
+
+def categories(jss, name=None):
+    """
+    :returns: list of all categories
+    """
+    _categories = jss.get('categories')['categories']['category']
+    if name is not None:
+        return [x for x in _categories if name in x['name']]
+    else:
+        return _categories
+
+
+def policies_in_categories(jss, categories):
+    """
+    Get list of policies in specified categories
+
+    :param jss:         jamf.API object
+    :param categories:  list of category names
+    :returns:           list of all policies from specified categories
+    """
+    logger = logging.getLogger(__name__)
+    logger.debug(f"categories: {categories}")
+    policies = []
+    for c in categories:
+        result = jss.get(f"policies/category/{c}")['policies']
+        policies += result.get('policy', [])
+    
+    return policies
+
+
+def app_policies(jss):
+    """
+    Get all policies from categories starting with 'Apps -'
+    CAVEAT: requires naming scheme 
+    :returns: list of installation policies
+    """
+    _app_categories = [x['name'] for x in categories(jss, 'Apps -')]
+    return policies_in_categories(jss, _app_categories)
 
 
 ## EXPERIMENTAL
@@ -496,13 +537,6 @@ def new_app_policy(jss, name):
     pass
 
 
-def all_app_policies(jss, name, template=None):
-    """
-    
-    """
-    all_policies = jss.get('policies')
-    pprint.pprint(all_policies)
-
 
 def test_policy_modification(jss, jssid, icon):
     """
@@ -863,10 +897,19 @@ def update_patch_policies(jss):
 
 def main():
     address, auth = config('private/jss.plist')
-    jss = jamf.API(address, auth=auth)
+    api = jamf.API(address, auth=auth)
     
+    import jamf.policies as policies
+    # result = policies_in_categories(jss, ('Apps - Educational',))
+    
+    # result = policies.add_script(api, 463, None)
+    # result = policies.add_notify_script(api, 433)
+    result = policies.quick_modify(api)
+    pprint.pprint(result)
+    # raw = api.get('policies/id/416', raw=True)
+    # print(raw.text)
     # new_management_title_workflow_example(jss)
-    update_patch_policies(jss)
+    # update_patch_policies(jss)
 
     # global modifications of patch policies (disable unknown upgrades
     # update_all_patch_policies(jss)
