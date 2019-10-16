@@ -10,11 +10,31 @@ __copyright__ = 'Copyright (c) 2019 University of Utah, Marriott Library'
 __license__ = 'MIT'
 __version__ = "0.0.0"
 
+import os
 import logging
 
 from . import convert
+from .api import APIError
 
+# GLOBALS
 LOGGER = logging.getLogger(__name__)
+CATEGORY = {
+    'Apps - Admin Utilities': {'id': 40, 'name': 'Apps - Admin Utilities'},
+    'Apps - Audio': {'id': 47, 'name': 'Apps - Audio'},
+    'Apps - Chat': {'id': 7, 'name': 'Apps - Chat'},
+    'Apps - Educational': {'id': 48, 'name': 'Apps - Educational'},
+    'Apps - Games': {'id': 49, 'name': 'Apps - Games'},
+    'Apps - Graphical': {'id': 15, 'name': 'Apps - Graphical'},
+    'Apps - Imaging': {'id': 3, 'name': 'Apps - Imaging'},
+    'Apps - Internet': {'id': 8, 'name': 'Apps - Internet'},
+    'Apps - Office': {'id': 14, 'name': 'Apps - Office'},
+    'Apps - Programming': {'id': 39, 'name': 'Apps - Programming'},
+    'Apps - Science': {'id': 50, 'name': 'Apps - Science'},
+    'Apps - Utilities': {'id': 2, 'name': 'Apps - Utilities'},
+    'Apps - Video': {'id': 44, 'name': 'Apps - Video'},
+    'Apps - Web Browsers': {'id': 1, 'name': 'Apps - Web Browsers'},
+}
+
 
 class Error(Exception):
     pass
@@ -36,6 +56,40 @@ class Scope(object):
         self.exclusions = None
         self.limitations = None
     
+
+class Script(object):
+
+    def __init__(self, name, priority, parameters):
+        self.name = name
+        self.priority = priority # Before || After
+        self.parameters = parameters
+
+
+class Scripts(object):
+    
+    def add(self, x):
+        pass
+    
+    def remove(self, x):
+        pass
+
+
+class Packages(object):
+    pass
+
+
+class SelfService(object):
+
+    def __init__(self):
+        self.icon = None
+        self.description = None
+        self.name = None
+        self.notification = None
+        self.enabled = None
+        self.featured = None
+        self.categories = None
+        self.buttons = None
+
 
 class Policy(object):
 
@@ -111,17 +165,6 @@ class Policy(object):
         return convert.dict_to_xml({'policy': self.data})
 
 
-# def categories(jss, name=None):
-#     """
-#     :returns: list of all categories
-#     """
-#     _categories = jss.get('categories')['categories']['category']
-#     if name is not None:
-#         return [x for x in _categories if name in x['name']]
-#     else:
-#         return _categories
-
-
 def categories(api, name='', exclude=()):
     """
     Get JSS Categories
@@ -168,81 +211,130 @@ def app_policies(api, exclude=()):
     return policies_in_categories(api, _app_categories)
 
 
-def app_policy_template(appname, category_name, scope):
-    category = CATEGORY[category_name]
-    return {'policy': {'general': {'name': name,
-                                   'frequency': 'Ongoing',
-                                   'category': category,
-                                   'trigger_other': 'lab_software'},
-                        'scope': scope,
-                        'scripts': {'script': {'id': '66',
-                                               'parameter4': f"Installing {name}",
-                                               'priority': 'Before'}},
-                        'self_service': {'use_for_self_service': 'true'}
-                                   }}
-
-
-def new_app_policy(api, name):
+def default_app_scripts(name):
     """
-    workflow of creating a new app policy
+    :returns: default scripts for app policies
     """
-    # questions:
-    # what does a base-minimum new policy look like?
-    raise NotImplementedError("not yet finished")
-    all_policies = api.get('policies')
-    matching = []
-    for p in all_policies['policies']:
-        if name in p['name']:
-            matching.append(p)
+    logger = logging.getLogger(__name__)
+    logger.warning(f"using hard-coded scripts")
+    return {'script': {'id': '66', 'priority': 'Before',
+                       'parameter4': f"Installing {name}"}}
+
     
-    return matching
-    # requirements:
-    # - name
-    # - category
-    # - package
-    # - icon
-    # - scope
-    # - 
-    pass
-
-
-def test_policy_modification(api, jssid, icon):
+def self_service(name, desc=None, icon=None):
     """
-    Verify setting some values adjust others
+    :returns: template for self service
     """
-    existing = api.get(f"policies/id/{jssid}")['policy']
+    _template = {'self_service_display_name': name,
+                 'use_for_self_service': 'true'}
+    if desc:
+        _template['self_service_description'] = desc
+    if icon:
+        _template['self_service_icon'] = icon
 
-    # upload icon if it's missing
-    if not existing['self_service']['self_service_icon']:
-        api.upload(f"policies/id/{jssid}", icon)
+    return _template
+
+
+def app_policy_template(name, category, trigger=None):
+    """
+    :returns: slightly populated application policy template
+    """
+    # TO-DO: create Policy class with configuration file for defaults
+    # default trigger
+    logger = logging.getLogger(__name__)
+    logger.debug("building app policy template")
+    custom_trigger = trigger or 'lab_software'
+
+    general = {'name': name,
+               'enabled': 'true',
+               'frequency': 'Ongoing',
+               'category': CATEGORY[category],
+               'trigger_other': custom_trigger}
     
-    category = CATEGORY['Apps - Office']
-    policy = {'general': {'category': category},
-              'self_service': {
-                'self_service_categories': {'category': category}}
-              }
-    result = api.put('policies/id/453', {'policy': policy})
-    pprint.pprint(result)
+    # get scoping
+    logger.warning("using hard-coded scoping")
+    groups = [{'id': '219', 'name': '+ 10.14 OS'},
+              {'id': '222', 'name': '+ 10.15 OS'}]
+    scoping = {'computer_groups': {'computer_group': groups}}
 
+    _template = {'general': general,
+                 'scope': scoping,
+                 'scripts': default_app_scripts(name),
+                 'self_service': {'use_for_self_service': 'true'}}
 
-def new_policy_workflow(api):
-    name = None
-    icon = None
-    package = None
-    category = None
-    template = None
-    timestamp = None
+    return {'policy': _template}
+
+   
+def new_app_policy(api, name, category, pkgs, icon, desc=None, scripts=None):
+    """
+    Create new app policy
+
+    TO-DO: check for existing icon
+    """
+    logger = logging.getLogger(__name__)
+    # check for existing policy
+    try:
+        logger.debug(f"checking for existing policy: {name}")
+        policy = api.get(f"policies/name/{name}")
+        logger.error(f"found existing policy: {name}")
+        return policy
+    except APIError as e:
+        pass
     
-    # create_app_policy(api, name)
-    # template = app_policy_template(name)
-    # result = api.post('policies/id/0', template)
-    # pprint.pprint(result)
-    # result = api.get('policies/id/453')
-    # return result
-    pass
+    template = app_policy_template(name, category)
+    template
+    logger.info(f"creating new app policy: {name}")
+    jssid = api.post('policies/id/0', template)['policy']['id']
+    logger.debug(f"successfully created: {name} (id: {jssid})")
+    
+    endpoint = f"policies/id/{jssid}"
+    # upload icon (if necessary?)
+    logger.info(f"uploading icon: {icon}")
+    api.upload(endpoint, icon)
+    logger.debug(f"icon successfully uploaded")
+    
+    update_app_policy(api, jssid, pkgs, desc, scripts)
 
 
-def verify_policy(policy):
+def update_app_policy(api, jssid, pkgs, desc=None, scripts=None):
+    """
+    Designed to update newly created app policies
+
+    NOTE: all modifications should be fully built (does not merge data)
+
+    TO-DO: test description update
+    """
+    # logger = logging.getLogger(__name__)
+    # NOTE: this is kludgy, but I don't want to modify pkgs from outside
+    try:
+        _pkgs = {k:v for k,v in pkgs.items()}
+        _pkgs['action'] = 'Install'
+    except AttributeError:
+        if instance(pkgs, list):
+            _pkgs = []
+            for p in pkgs:
+                n = {'action': 'Install'}
+                n.update(p)
+                _pkgs.append(n)
+
+    mod = {'package_configuration': {'packages': {'package': _pkgs}}}
+        
+    # self service
+    if desc:
+        mod['self_service'] = {'self_service_description': desc}
+
+    # add scripts
+    if scripts:
+        mod['scripts'] = scripts
+
+    # upload changes
+    changes = {'policy': mod}
+    # return changes
+    return api.put(f"policies/id/{jssid}", changes)
+
+
+
+def verify(policy):
     """
     verify policy
     """
@@ -426,4 +518,5 @@ def quick_modify(api):
             logger.error(f"{name}: failed: {e}")
         # result.append({'policy': mod})
     # return result
+    pass
         

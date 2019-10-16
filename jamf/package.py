@@ -10,54 +10,170 @@ __copyright__ = 'Copyright (c) 2019 University of Utah, Marriott Library'
 __license__ = 'MIT'
 __version__ = "0.0.0"
 
+import re
 import logging
+import plistlib
+import hashlib
+import datetime as dt
+
+# GLOBALS
+LOGGER = logging.getLogger(__name__)
 
 
 class Error(Exception):
     pass
 
-    
-class Package(JSSObject):
+
+class JDS(object):
     """
-    Experimental class (not in use)
+    Jamf Distribution Server
+    """
+
+    def __init__(self, address, auth):
+        """
+        """
+        self.log = logging.getLogger(f"{__name__}.JDS")
+        self.address = address
+        self.auth = auth
+        self.path = None
+        self._mounted = None
+
+    def mount(self):
+        """
+        Mount the Jamf Distribution Server
+        """
+        raise NotImplementedError()
+        if self._mounted:
+            self.log.error("JDS already mounted")
+            return
+
+    def packages(self):
+        """
+        :returns: list of packages on JDS
+        """
+        raise NotImplementedError()
+        
+    def upload(self, pkg):
+        """
+        Add package to JDS 
+        """
+        raise NotImplementedError()
+
+    def find(self, pkg):
+        """
+        Locate package on JDS
+        """
+        raise NotImplementedError()
+        
+
+class Manager(object):
+    """
+    Package Manager
+    """
+
+    def __init__(self, config):
+        self.log = logging.getLogger(f"{__name__}.Manager")
+        self.config = config
+        jds = self.config['JDS']
+        self.jds = JDS(jds['address'], jds['authentication'])
+    
+    def find(self, name):
+        """
+        :param name:        name of package
+        :returns Package:  
+        """
+        raise NotImplementedError()
+    
+    def upload(self, pkg):
+        """
+        Upload package to JDS and create new database entry
+        """
+        raise NotImplementedError()
+    
+    
+class Package(object):
+    """
+    Experimental: NOT IN USE
+    Base Package class 
+    """
+    def __init__(self, appname, name, version):
+        self.appname = appname
+        self.name = name
+        self.version = version
+
+
+class Record(object):
+    """
+    Class for local package records
     """
     def __init__(self, path):
         self.path = path
-        self.name = os.path.basename(path)
-        self.jssid = None
+        self.app = None
+        self.version = None
         self.uploaded = None
         self.indexed = None
-        self.category = None
-    
-    def upload(self):
+        self.install_path = None
+        
+        if os.path.exists(path):
+            self.load(path)
+
+    def load(self):
+        """
+        load from disk
+        """
+        raise NotImplementedError()
+
+    def save(self):
+        """
+        save to disk
+        """
+        raise NotImplementedError()
+        
+
+class LocalPackage(object):
+
+    def __init__(self, record):
         pass
+
+
+class JSSPackages(object):
     
-    def index(self):
-        pass
+    def __init__(self, api):
+        self.log = logging.getLogger(f"{__name__}.ServerPackages")
+        self.log.info("getting packages from server: {api.address!r}")
+        self.packages = api.get('packages')['packages']['package']
     
-
-class Version(object):
-
-    def __init__(self, pkg=None):
-        self.package = pkg
-
-
-
-class PackageOrig(object):
+    @property
+    def names(self):
+        """
+        :returns: list of names of all packages
+        """
+        return [p['name'] for p in self.packages]
     
-    def __init__(self, jssid, name):
-        self.jssid = jssid
-        self.name = name
-    
-    def _parse(self, name):
-        _name = name
-        while 'pkg' in _name:
-            _name = os.path.splitext(_name)[0]
-        *name, version, date, initials = _name.split(_name)
-        # name, version, date, who, ext
+    def find(self, name):
+        """
+        :param name:    name of package
+        :returns dict:  package information
+        """
+        for p in self.packages:
+            if p['name'] == name:
+                return p
+        err = f"missing package: {name!r}"
+        self.log.error(err)
+        raise Error(err)
 
 
-def parse_pkg_name(name):
+def verify(api, pkg):
+    """
+    Verify package on JSS
+
+    :param api:  jamf.API object
+    :param pkg:  Package object
+    """
+    raise NotImplementedError()
+
+
+def parse_name_orig(name):
     """
     split package naming scheme into parts
 
@@ -75,6 +191,20 @@ def parse_pkg_name(name):
     *name, version, date, initials = pkg.split('_')
     return "_".join(name), version, date, initials
     
+
+def parse_name(name, regex):
+    """
+    split package naming scheme into parts
+
+    WARNING: not perfect
+
+    :returns: "appname", "version", "date", "initials"
+    
+    >>> parse_pkg_name('name_of_app_1.0_2019.09.18_swf.pkg')
+    'name_of_app', '1.0', '2019.09.18', 'swf'
+    """
+    raise NotImplementedError()
+
 
 def packages(api):
     """
@@ -112,6 +242,15 @@ def installer_packages():
     pprint.pprint(info)
 
 
+def md5(path):
+    """
+    :returns: md5 checksum of path
+    """
+    md5 = hashlib.md5()
+    with open(path, 'rb') as f: 
+        for chunk in iter(lambda: f.read(8192), b''): 
+            md5.update(chunk)
+    return md5.digest()
 
 
 if __name__ == '__main__':

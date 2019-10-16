@@ -23,6 +23,13 @@ class Error(Exception):
     pass
 
 
+class APIError(Error):
+    def __init__(self, response, msg):
+        self.response = response
+        self.status_code = response.status_code
+        self.message = msg
+
+
 class API(object):
     """
     Class for making api calls to JSS
@@ -69,7 +76,7 @@ class API(object):
             err = f"GET failed: {url}: {response}"
             self.log.error(err)
             self.log.debug(f"TEXT: {response.text}")
-            raise Error(err)
+            raise APIError(response, err)
         
         # convert response.text based on specified format
         if json:
@@ -101,7 +108,7 @@ class API(object):
             err = f"POST failed: {url}: {response}"
             self.log.error(err)
             self.log.debug(f"TEXT: {response.text}")
-            raise Error(err)
+            raise APIError(response, err)
 
         # return succesful response data (usually {'id': jssid})
         return convert.xml_to_dict(response.text)
@@ -128,7 +135,7 @@ class API(object):
             err = f"PUT failed: {url}: {response}"
             self.log.error(err)
             self.log.debug(f"TEXT: {response.text}")
-            raise Error(err)
+            raise APIError(response, err)
 
         # return succesful response data (usually {'id': jssid})
         return convert.xml_to_dict(response.text)
@@ -158,7 +165,7 @@ class API(object):
 
         # NOTE: JSS requires filename extension (or upload will fail)
         if not os.path.splitext(name)[1]:
-            raise Error(f"missing file extension: {path!r}")
+            raise APIError(response, f"missing file extension: {path!r}")
 
         # determine mime-type of file (if unspecified)
         if not mime_type:
@@ -177,7 +184,7 @@ class API(object):
             err = f"PUT failed: {url}: {response}"
             self.log.error(err)
             self.log.debug(f"TEXT: {response.text}")
-            raise Error(err)
+            raise APIError(response, err)
         
     def __del__(self):
         self.log.debug("closing session")

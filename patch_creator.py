@@ -7,22 +7,6 @@ import pprint
 
 ## GLOBALS
 
-CATEGORY = {
-    'Apps - Admin Utilities': {'id': 40, 'name': 'Apps - Admin Utilities'},
-    'Apps - Audio': {'id': 47, 'name': 'Apps - Audio'},
-    'Apps - Chat': {'id': 7, 'name': 'Apps - Chat'},
-    'Apps - Educational': {'id': 48, 'name': 'Apps - Educational'},
-    'Apps - Games': {'id': 49, 'name': 'Apps - Games'},
-    'Apps - Graphical': {'id': 15, 'name': 'Apps - Graphical'},
-    'Apps - Imaging': {'id': 3, 'name': 'Apps - Imaging'},
-    'Apps - Internet': {'id': 8, 'name': 'Apps - Internet'},
-    'Apps - Office': {'id': 14, 'name': 'Apps - Office'},
-    'Apps - Programming': {'id': 39, 'name': 'Apps - Programming'},
-    'Apps - Science': {'id': 50, 'name': 'Apps - Science'},
-    'Apps - Utilities': {'id': 2, 'name': 'Apps - Utilities'},
-    'Apps - Video': {'id': 44, 'name': 'Apps - Video'},
-    'Apps - Web Browsers': {'id': 1, 'name': 'Apps - Web Browsers'},
-}
 
 
 

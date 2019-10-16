@@ -231,21 +231,9 @@ def update_patch_policies(api, name, versions, pkgs):
 def main():
     address, auth = config('private/jss.plist')
     api = jamf.API(address, auth=auth)
-    
-    import jamf.policies as policies
-    # result = policies_in_categories(jss, ('Apps - Educational',))
-    
-    # result = policies.add_script(api, 463, None)
-    # result = policies.add_notify_script(api, 433)
-    result = policies.quick_modify(api)
-    pprint.pprint(result)
-    # raw = api.get('policies/id/416', raw=True)
-    # print(raw.text)
-    # new_management_title_workflow_example(jss)
-    # update_patch_policies(jss)
-
-    # global modifications of patch policies (disable unknown upgrades
-    # update_all_patch_policies(jss)
+    # p = jamf.policy.update_app_policy(api, 468, {'id': 285, 'name': 'tweetdeck_3.16.1_2019.09.18_rcg.pkg', 'action': 'Install'})
+    # pprint.pprint(p)
+    jamf.patch.create_patch_policies(api, 26, 'VueScan', '9.7.04')
 
 
 if __name__ == '__main__':

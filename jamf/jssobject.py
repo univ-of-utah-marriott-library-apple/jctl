@@ -25,11 +25,11 @@ class JSSObject(object):
     # defined XML schema
     # property: xml
     # str(obj.xml) returns xml string
-    def __init__(self, d):
+    def __init__(self, jssid):
         """
         """
         # need list of GLOBAL jss keys
-        self.jssid = None
+        self.jssid = jssid
         self._schema = None
         
     

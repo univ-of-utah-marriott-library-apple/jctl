@@ -15,6 +15,7 @@ import logging
 
 # from .jss import JSS
 from . import convert
+from .api import APIError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -376,7 +377,7 @@ def find_software_title(jss, name, details=True):
     raise Error(f"missing software title: {name!r}")
 
 
-def new_softwaretitle(jss, name, category=None, source=jamf.KINOBI):
+def new_softwaretitle(jss, name, category=None, source=KINOBI):
     """
     :param jss:         JSS API object
     :param name:        name of software title
@@ -544,7 +545,12 @@ def create_patch_policies(jss, jssid, appname, stable, beta=None, latest=None):
         
         # Post to JSS 
         endpoint = f"patchpolicies/softwaretitleconfig/id/{jssid}"
-        jss.post(endpoint, {'patch_policy': data})
+        try:
+            jss.post(endpoint, {'patch_policy': data})
+        except APIError as e:
+            if e.status_code != 409:
+                raise
+            
 
 
 def verify_software_title(jss, _root_dict, category, pkgs):
@@ -565,7 +571,8 @@ def verify_software_title(jss, _root_dict, category, pkgs):
     update_softwaretitle_packages(jss, title['id'], pkgs)
 
 
-
+# definition
+# https://www.jamf.com/jamf-nation/articles/497/jamf-pro-external-patch-source-endpoints
 
 # EXPERIMENTAL
 
