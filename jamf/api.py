@@ -8,12 +8,13 @@ __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2019 University of Utah, Marriott Library'
 __license__ = 'MIT'
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 import logging
 import requests
 import os
 import subprocess
+import plistlib
 
 # from . import cache
 from . import convert
@@ -35,7 +36,7 @@ class API(object):
     Class for making api calls to JSS
     """
 
-    def __init__(self, address, auth=()):
+    def __init__(self, address=None, auth=(), config=None):
         """
         Create requests.Session with JSS address and authentication
 
@@ -43,6 +44,10 @@ class API(object):
         :param auth <tuple>:    JSS authentication credentials (user, passwd)
         """
         self.log = logging.getLogger(f"{__name__}.JSS")
+        if config:
+            address, auth = apiconfig(config)
+        if not address:
+            raise Error("no address specified")
         self.url = f"https://{address}:8443/JSSResource"
         self.session = requests.Session()
         self.session.headers.update({'Accept': 'application/xml'})
@@ -200,6 +205,17 @@ def mime_type(path):
     """
     cmd = ['/usr/bin/file', '-b', '--mime-type', path]
     return subprocess.check_output(cmd).rstrip()
+
+
+def apiconfig(plist):
+    """
+    loads configuration from plist
+    :returns: address, (username, passwd)
+    """
+    with open(plist, 'rb') as f:
+        c = plistlib.load(f)
+    user, passwd = c['login'].split(':')
+    return c['address'], (user, passwd)
 
 
 if __name__ == '__main__':
