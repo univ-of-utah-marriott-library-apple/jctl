@@ -93,20 +93,26 @@ class SelfService(object):
 
 class Policy(object):
 
-    def __init__(self, api, jssid=None):
+    def __init__(self, api, jssid=None, name=None):
         self.log = logging.getLogger(f"{__name__}.Policy")
         self.api = api
-        self._jssid = jssid
+
+		self.data = {}
+		self._general = {}
         self._name = None
         self.enabled = None
         self._scope = None
         self._modified = False
 
-        if jssid:
+		if name:
+			self._name = name
+            self.data = api.get(f"policies/name/{name}")['policy']
+        elif jssid:
+			self._jssid = jssid
             self.data = api.get(f"policies/id/{jssid}")['policy']
-        else:
-            self._general = {}
-            self.data = {}
+		else:
+			raise Error("must specify name or jssid")
+
 
     @property
     def jssid(self):
@@ -139,8 +145,21 @@ class Policy(object):
     def scope(self):
         pass
     
+    def replace_package(self, old, new):
+    	pass
+    
+    def add_package(self, name):
+    	pass
+    
+    def remove_package(self, name):
+    	pass
+    	
     def packages(self):
-        pass
+        """
+		:returns: existing policy packages (if any)
+        """
+        
+        
     
     def selfservice(self):
         pass
@@ -163,6 +182,28 @@ class Policy(object):
     
     def xml(self):
         return convert.dict_to_xml({'policy': self.data})
+
+
+# jamf.policy.replace_package(api, policy, old, new)?
+
+# jamf.Policy(api, name="Office").replace_package("Office 2016", "Office 2019")?
+
+# p = jamf.Policy(api, name="Office")
+# p.replace_package("Office 2016", "Office 2019")
+
+def replace_package(self, old, new):
+	pass
+
+def add_package(self, name):
+	pass
+
+def remove_package(self, name):
+	pass
+	
+def packages(self):
+	"""
+	:returns: existing policy packages (if any)
+	"""
 
 
 def categories(api, name='', exclude=()):

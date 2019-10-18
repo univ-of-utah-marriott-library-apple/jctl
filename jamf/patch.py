@@ -169,7 +169,7 @@ class SoftwareTitles():
     
     def __init__(self, api):
         endpoint = 'patchsoftwaretitles'
-        self.jss = api
+        self.api = api
         result = self.api.get(endpoint)['patch_software_titles']
         self.titles = result['patch_software_title']
 #         for t in result['patch_software_title']:

@@ -4,4 +4,5 @@ from .api import API
 from . import patch
 from . import package
 from . import policy
+from .policy import Policy
 
