@@ -28,7 +28,7 @@ EOT
 
 The api can be interacted with via python3 shell
 
-```python3
+```python
 import pprint
 import jamf
 
