@@ -45,8 +45,14 @@ The api can be interacted with via python3 shell
 ```python
 import pprint
 import jamf
+import logging
+
+fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
+logging.basicConfig(level=logging.DEBUG, format=fmt)
+logger = logging.getLogger(__name__)
 
 # create an jamf.API object (requires requests lib)
+logger.debug("creating api")
 jss = jamf.API(config='private/jss.plist')
 
 # get any information from your jss using the classic api endpoints
