@@ -5,9 +5,18 @@ Python 3 experimentation
 
 This is a util for maintaining Jamf Pro via command-line
 
-# authentication
+# A work in progress
 
-Run the following command from inside the repo ('private/' is in .gitignore)
+This library is nowhere near finished, I submitted it to allow a colleague to help with its development.
+
+# Requirements
+
+jamfutil requires python3 and requests library
+
+# Authentication
+
+Run the following command from inside the repo ('private/' is in .gitignore) 
+
 ```bash
 $ mkdir private
 $ cat <<EOT > private/jss.plist
@@ -24,19 +33,38 @@ $ cat <<EOT > private/jss.plist
 EOT
 ```
 
-# API access 
+The username and password provided will have to be added and given the appropriate access rights 
+
+
+# A Few Examples
 
 The api can be interacted with via python3 shell
+
+`> python3`
 
 ```python
 import pprint
 import jamf
 
-# create an jamf.API object
-api = jamf.API(config='private/jss.plist')
+# create an jamf.API object (requires requests lib)
+jss = jamf.API(config='private/jss.plist')
 
 # get any information from your jss using the classic api endpoints
 
-policy = api.get('policies/id/1')
-pprint.pprint(policy)
+# print out all policies
+all_policies = jss.get('policies')
+pprint.pprint(all_policies)
+
+# get all categories
+categories = jamf.policy.categories(jss)
+
+category_names = [x['name'] for x in categories]
+
+print(f"first category: {category_names[0]}")
+
+# all policies in a for first and second category
+policies = jamf.policy.policies_in_categories(jss, categories[0:2])
+pprint.pprint(policies)
 ```
+
+That's all I have currently
