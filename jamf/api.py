@@ -16,7 +16,6 @@ import os
 import subprocess
 import plistlib
 
-# from . import cache
 from . import convert
 
 
@@ -217,6 +216,3 @@ def apiconfig(plist):
     user, passwd = c['login'].split(':')
     return c['address'], (user, passwd)
 
-
-if __name__ == '__main__':
-    pass

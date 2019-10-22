@@ -229,11 +229,13 @@ def update_patch_policies(api, name, versions, pkgs):
 ## MAIN
 
 def main():
-    address, auth = config('private/jss.plist')
+    address, auth = config('../jss.plist')
     api = jamf.API(address, auth=auth)
     # p = jamf.policy.update_app_policy(api, 468, {'id': 285, 'name': 'tweetdeck_3.16.1_2019.09.18_rcg.pkg', 'action': 'Install'})
     # pprint.pprint(p)
-    jamf.patch.create_patch_policies(api, 26, 'VueScan', '9.7.04')
+    # jamf.patch.create_patch_policies(api, 26, 'VueScan', '9.7.04')
+    result = api.get('policies/id/173')
+    pprint.pprint(result)
 
 
 if __name__ == '__main__':
