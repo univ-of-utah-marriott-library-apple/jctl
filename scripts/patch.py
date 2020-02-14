@@ -37,7 +37,7 @@ __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
 
 import sys
@@ -118,7 +118,7 @@ class Parser:
                             help='use username instead of prompting')
         config.add_argument('-p', '--passwd',
                             help='specify password (default: prompt)')
-        config.add_argument('-c', '--config', metavar='PATH',
+        config.add_argument('-c', '--config', dest='path', metavar='PATH',
                             help=f"specify config file (default: {jamf.config.PREFERENCES})")
         config.add_argument('-d', '--delete', action='store_true',
                             help='delete existing config profile')
