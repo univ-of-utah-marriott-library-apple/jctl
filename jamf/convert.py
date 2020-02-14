@@ -8,42 +8,15 @@ __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2019 University of Utah, Marriott Library'
 __license__ = 'MIT'
-__version__ = "0.2.1"
-
-import os
-import logging
+__version__ = "0.2.2"
 
 from xml.etree import cElementTree as ElementTree
+import xml.sax.saxutils
 from collections import defaultdict
 
 
 class Error(Exception):
     pass
-
-
-def etree_to_dict_orig(t):
-    """
-    original function: https://stackoverflow.com/a/10077069/12020818
-    contains additional
-    """
-    d = {t.tag: {} if t.attrib else None}
-    children = list(t)
-    if children:
-        dd = defaultdict(list)
-        for dc in map(etree_to_dict, children):
-            for k, v in dc.items():
-                dd[k].append(v)
-        d = {t.tag: {k:v[0] if len(v) == 1 else v for k, v in dd.items()}}
-    if t.attrib:
-        d[t.tag].update(('@' + k, v) for k, v in t.attrib.items())
-    if t.text:
-        text = t.text.strip()
-        if children or t.attrib:
-            if text:
-              d[t.tag]['#text'] = text
-        else:
-            d[t.tag] = text
-    return d
 
 
 def etree_to_dict(x):
@@ -62,13 +35,14 @@ def etree_to_dict(x):
         result = {x.tag: {k:v[0] if len(v) == 1 else v for k, v in dd.items()}}
     elif x.text:
         result[x.tag] = x.text.strip()
-            
+
     return result
 
 
 def dict_to_xml(data):
     """
-    converts python dict to xml string
+    Convert python dict to xml string
+    :returns:  xml string
     """
     if isinstance(data, dict):
         xml_str = ''
@@ -88,19 +62,15 @@ def dict_to_xml(data):
         raise Error("unable to properly tag nested lists")
     else:
         # string, boolean, integers, floats, etc
-        xml_str = f"{data}"
-    
+        xml_str = xml.sax.saxutils.escape(f"{data}")
+
     return xml_str
-        
+
 
 def xml_to_dict(xml_string):
-    logger = logging.getLogger(__name__)
-    # logger.debug(f"converting xml: {xml_string!r}")
+    """
+    Convert xml string to python dict
+    :returns:  dict
+    """
     root = ElementTree.XML(xml_string)
     return etree_to_dict(root)
-
-
-if __name__ == '__main__':
-    # fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
-    # logging.basicConfig(level=logging.DEBUG, format=fmt)
-    pass

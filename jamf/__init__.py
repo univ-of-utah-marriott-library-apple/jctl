@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
 from .api import API
-from . import patch
+from .admin import JamfAdmin as Admin
 from . import package
-from . import policy
-from .policy import Policy
-

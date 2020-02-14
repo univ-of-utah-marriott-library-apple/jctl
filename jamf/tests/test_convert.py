@@ -3,7 +3,7 @@
 # import os
 # import logging
 import unittest
-import pprint
+# import pprint
 from .. import convert
 # from .. import Patch
 
@@ -344,57 +344,16 @@ patchpolicies = '''<?xml version="1.0" encoding="UTF-8"?>
 </patch_available_titles>
 '''
 
-@unittest.skip
-class ConversionTestOLD(unittest.TestCase):
-    
-    def setUp(self):
-        self.xml = '<empty></empty>'
-        self.data = {'empty': {}}
-    
-    def test_xml_to_dict(self):
-        """
-        test conversion of xml string to dict 
-        """
-        expected = self.data
-        result = convert.xml_to_dict(self.xml)
-        self.assertEqual(expected, result)
-
-    def test_dict_to_xml(self):
-        """
-        test conversion of dict to xml string
-        """
-        expected = self.xml
-        result = convert.dict_to_xml(self.data)
-        self.assertEqual(expected, result)
-
-    def test_dict_reconvert(self):
-        """
-        test dict -> xml -> dict
-        """
-        _xml = convert.dict_to_xml(self.data)
-        result = convert.xml_to_dict(_xml)
-        expected = self.data
-        self.assertEqual(expected, result)
-
-    def test_xml_reconvert(self):
-        """
-        test xml -> dict -> xml
-        """
-        _dict = convert.xml_to_dict(self.xml)
-        result = convert.dict_to_xml(_dict)
-        expected = self.xml
-        self.assertEqual(expected, result)
-
 
 class ConversionTest(unittest.TestCase):
-    
+
     def setUp(self):
         self.xml = '<nothing/>'
         self.data = {'nothing': None}
-    
+
     def test_xml_to_dict(self):
         """
-        test conversion of xml string to dict 
+        test conversion of xml string to dict
         """
         expected = self.data
         result = convert.xml_to_dict(self.xml)
@@ -435,7 +394,7 @@ class TestSimpleDict(ConversionTest):
 
 
 class TestSimpleList(ConversionTest):
-    
+
     def setUp(self):
         self.xml = ('<list>'
                       '<item>one</item>'
@@ -443,10 +402,10 @@ class TestSimpleList(ConversionTest):
                       '<item>three</item>'
                     '</list>')
         self.data = {'list': {'item': ['one', 'two', 'three']}}
-        
+
 
 class TestListOfDicts(ConversionTest):
-    
+
     def setUp(self):
         self.xml = ('<list>'
                       '<item>'
@@ -462,7 +421,7 @@ class TestListOfDicts(ConversionTest):
                         '<name>three</name>'
                       '</item>'
                     '</list>')
-        self.data = {'list': {'item': [{'id': '1', 'name': 'one'}, 
+        self.data = {'list': {'item': [{'id': '1', 'name': 'one'},
                                        {'id': '2', 'name': 'two'},
                                        {'id': '3', 'name': 'three'}]}}
 
@@ -472,10 +431,10 @@ class TestPatchSoftwareTitle(ConversionTest):
     """
     Too difficult to test
 
-    We can't guarantee the ordering of strings when converting 
+    We can't guarantee the ordering of strings when converting
     from a dictionary to xml string, so even though the values are identical,
     string comparison fails
-    """ 
+    """
     def setUp(self):
         self.maxDiff = None
         self.xml = ('<patch_software_title>'
@@ -548,7 +507,7 @@ class TestPatchSoftwareTitle(ConversionTest):
                                                                                     'name': 'firefox_68.0.1_2019.07.22_rcg.pkg'},
                                                                         'software_version': '68.0.1'}]}}}
         # pprint.pprint(convert.dict_to_xml(self.xml))
-    
+
     @unittest.skip("key ordering causes incorrect failure")
     def test_dict_to_xml(self):
         pass
