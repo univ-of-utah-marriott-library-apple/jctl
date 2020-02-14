@@ -37,7 +37,7 @@ __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 
 import sys
@@ -49,6 +49,7 @@ import argparse
 import jamf
 import jamf.admin
 from jamf.package import Package
+import jamf.config
 
 
 class Parser:
@@ -95,18 +96,30 @@ class Parser:
                                           description="get info need for patch definitions")
         info.add_argument('path', metavar='PACKAGE', help='path to package')
 
-        # information
+        # upload packages
         upload = self.subparsers.add_parser('upload', help='upload packages',
                                             description="upload a package")
         upload.add_argument('path', metavar='PACKAGE', help='path to package')
         upload.add_argument('-f', '--force', action='store_true',
                             help='force package re-upload')
 
-        # information
+        # remove packages
         remove = self.subparsers.add_parser('remove', help='remove packages',
                                             description="remove a package")
         remove.add_argument('name', metavar='PACKAGE', help='name of package')
         # upload.add_argument('-f', '--force', help='force package re-upload')
+
+        # config
+        config = self.subparsers.add_parser('config', help='modify config',
+                                            description="modify config")
+        config.add_argument('-u', '--user',
+                            help='use username instead of prompting')
+        config.add_argument('-p', '--passwd',
+                            help='specify password (default: prompt)')
+        config.add_argument('-c', '--config', metavar='PATH',
+                            help=f"specify config file (default: {jamf.config.PREFERENCES})")
+        config.add_argument('-d', '--delete', action='store_true',
+                            help='delete existing config profile')
 
     def parse(self, argv):
         """
@@ -387,6 +400,21 @@ def main(argv):
             logger.error(f"package already removed: {path.name}")
         else:
             admin.delete(pkg)
+
+    elif args.cmd == 'config':
+        conf = jamf.config.SecureConfig(args.path)
+        if args.delete:
+            conf.reset()
+            raise SystemExit(f"deleted: {conf.path}")
+        hostname = args.hostname
+        if hostname:
+            conf.set('JSSHostname', hostname)
+        else:
+            hostname = conf.get('JSSHostname', prompt='JSS Hostname')
+        a = (args.user, args.passwd)
+        auth = a if all(a) else jamf.config.credentials_prompt(args.user)
+        conf.credentials(hostname, auth)
+        conf.save()
 
 
 if __name__ == '__main__':

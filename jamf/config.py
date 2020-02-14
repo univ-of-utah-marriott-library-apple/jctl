@@ -8,7 +8,7 @@ __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 
 import sys
 import copy
@@ -195,8 +195,9 @@ def transposition(key):
     return _wrapped
 
 
-def credentials_prompt():
-    user = input("username: ")
+def credentials_prompt(user=None):
+    if not user:
+        user = input("username: ")
     passwd = getpass.getpass()
     return user, passwd
 
