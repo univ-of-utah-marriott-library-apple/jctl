@@ -1,4 +1,4 @@
-# jamfutil
+# jctl
 
 Utility for updating Patch Management in JSS
 Python 3 experimentation
@@ -12,28 +12,6 @@ This library is nowhere near finished, I submitted it to allow a colleague to he
 # Requirements
 
 jamfutil requires python3 and requests library
-
-# Authentication
-
-Run the following command from inside the repo ('private/' is in .gitignore) 
-
-```bash
-$ mkdir private
-$ cat <<EOT > private/jss.plist
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>login</key>
-	<string>username:passwd</string>
-	<key>address</key>
-	<string>jamf.server.url</string>
-</dict>
-</plist>
-EOT
-```
-
-The username and password provided will have to be added and given the appropriate access rights 
 
 
 # A Few Examples
@@ -53,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 # create an jamf.API object (requires requests lib)
 logger.debug("creating api")
-jss = jamf.API(config='private/jss.plist')
+jss = jamf.API()
 
 # get any information from your jss using the classic api endpoints
 
@@ -62,15 +40,49 @@ all_policies = jss.get('policies')
 pprint.pprint(all_policies)
 
 # get all categories
-categories = jamf.policy.categories(jss)
+import jamf.category
+pprint.pprint([x.name for x in jamf.category.Categories()])
 
-category_names = [x['name'] for x in categories]
-
-print(f"first category: {category_names[0]}")
 
 # all policies in a for first and second category
-policies = jamf.policy.policies_in_categories(jss, categories[0:2])
 pprint.pprint(policies)
 ```
 
 That's all I have currently
+
+# Installation
+
+```bash
+# bash
+$> cd scripts
+$> sudo install.py
+$> echo 'export PYTHONPATH=/Library/Python/3.6/site-packages' >> ~/.profile
+```
+
+In a new shell
+```bash
+# get help with `patch.py`
+$> patch.py --help
+$> patch.py list --help
+$> patch.py upload --help
+$> patch.py config --help
+$> patch.py remove --help
+$> patch.py info --help
+$> patch.py update --help
+
+# list information about patch
+# list all Patch Management Title Names
+$> patch.py list
+
+# list all uploaded packages
+$> patch.py list --pkgs
+
+# list all versions (and associated package for <Name of Patch Management Title>
+$> patch.py list --versions <Name of Patch Management Title>
+$> patch.py list --patches <Name of Patch Management Title>
+
+# requires user to have Jamf Admin Privileges
+$> patch.py info /PATH/TO/PACKAGE
+$> patch.py upload /PATH/TO/PACKAGE
+$> patch.py remove <PACKAGE NAME>
+```
