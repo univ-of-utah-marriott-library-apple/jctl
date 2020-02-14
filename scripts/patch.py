@@ -37,7 +37,7 @@ __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 
 import sys
@@ -112,6 +112,8 @@ class Parser:
         # config
         config = self.subparsers.add_parser('config', help='modify config',
                                             description="modify config")
+        config.add_argument('-H', '--hostname',
+                            help='use username instead of prompting')
         config.add_argument('-u', '--user',
                             help='use username instead of prompting')
         config.add_argument('-p', '--passwd',
