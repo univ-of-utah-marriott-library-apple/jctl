@@ -33,6 +33,13 @@ $> update_patch.py -p 72.0 firefox_72.0_2020.01.08_rcg.pkg \
 
 """
 
+__author__ = 'Sam Forester'
+__email__ = 'sam.forester@utah.edu'
+__copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
+__license__ = 'MIT'
+__version__ = "1.0.1"
+
+
 import sys
 import logging
 import pprint
@@ -92,7 +99,8 @@ class Parser:
         upload = self.subparsers.add_parser('upload', help='upload packages',
                                             description="upload a package")
         upload.add_argument('path', metavar='PACKAGE', help='path to package')
-        upload.add_argument('-f', '--force', help='force package re-upload')
+        upload.add_argument('-f', '--force', action='store_true',
+                            help='force package re-upload')
 
         # information
         remove = self.subparsers.add_parser('remove', help='remove packages',
