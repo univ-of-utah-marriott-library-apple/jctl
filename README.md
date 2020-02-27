@@ -120,7 +120,6 @@ $> patch.py info --help
 $> patch.py update --help
 ```
 
-
 ## List all Patch Management Title Names
 ```$> patch.py list```
 
@@ -134,6 +133,7 @@ $> patch.py list --patches <Name of Patch Management Title>
 ```
 
 ## Requires user to have Jamf Admin Privileges
+
 ```
 $> patch.py info /PATH/TO/PACKAGE
 $> patch.py upload /PATH/TO/PACKAGE
@@ -146,72 +146,43 @@ $> patch.py remove <PACKAGE NAME>
 </plist>
 ```
 
-# A Few Examples
-
-The api can be interacted with via python3 shell
-
-`> python3`
-
-```python
-import pprint
-import jamf
-import logging
-
-fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
-logging.basicConfig(level=logging.DEBUG, format=fmt)
-logger = logging.getLogger(__name__)
-
-# create an jamf.API object (requires requests lib)
-logger.debug("creating api")
-jss = jamf.API(config='private/jss.plist')
-
-# get any information from your jss using the classic api endpoints
-
-# print out all policies
-all_policies = jss.get('policies')
-pprint.pprint(all_policies)
-
-# get all categories
-categories = jamf.policy.categories(jss)
-
-category_names = [x['name'] for x in categories]
-
-print(f"first category: {category_names[0]}")
-
-# all policies in a for first and second category
-policies = jamf.policy.policies_in_categories(jss, categories[0:2])
-pprint.pprint(policies)
-```
 
 # Installation
 
-```bash
+In a new shell:
+
+```
 $> cd scripts
 $> sudo install.py
 $> echo 'export PYTHONPATH=/Library/Python/3.6/site-packages' >> ~/.profile
-In a new shell```
+```
 
-# get help with `patch.py`
-```$> patch.py --help
+## Getting Help
+```
+$> patch.py --help
 $> patch.py list --help
 $> patch.py upload --help
 $> patch.py config --help
 $> patch.py remove --help
 $> patch.py info --help
-$> patch.py update --help```
+$> patch.py update --help
+```
 
-# list information about patch
-# list all Patch Management Title Names
+## List all Patch Management Title Names
 `$> patch.py list`
 
-# list all uploaded packages
+## List all uploaded packages
 `$> patch.py list --pkgs`
 
-# list all versions (and associated package for <Name of Patch Management Title>
-```$> patch.py list --versions <Name of Patch Management Title>
-$> patch.py list --patches <Name of Patch Management Title>```
+## List all versions (and associated packags)
+```
+$> patch.py list --versions <Name of Patch Management Title>
+$> patch.py list --patches <Name of Patch Management Title>
+```
 
-# requires user to have Jamf Admin Privileges
-```$> patch.py info /PATH/TO/PACKAGE
+## Requires user to have Jamf Admin Privileges
+```
+$> patch.py info /PATH/TO/PACKAGE
 $> patch.py upload /PATH/TO/PACKAGE
-$> patch.py remove <PACKAGE NAME>```
+$> patch.py remove <PACKAGE NAME>
+```
