@@ -13,11 +13,25 @@ This library is nowhere near finished, I submitted it to allow a colleague to he
 
 jamfutil requires python3 and requests library
 
+# Installation
+
+In a new shell:
+
+```
+$> cd scripts
+$> sudo install.py
+$> echo 'export PYTHONPATH=/Library/Python/3.6/site-packages' >> ~/.bash_profile
+```
+
+If you're using zsh use ~/.zshenv instead of ~/.bash_profile.
+
+If you have /usr/local/bin/plistlib.py make sure it is the python 3 version.
+
 # Authentication
 
 ## Authentication Setup
 
-Run the following command to setup or fix the authentication property list file.
+Run the following command to setup or fix the authentication property list file. Note: 8443 is automatically added to the hostname so don't include it.
 
 ```$ patch.py config
 JSS Hostname: [JAMF PRO HOSTNAME]
@@ -32,7 +46,6 @@ The username and password provided will have to be added and given the appropria
 The above command should reset the authorization property list, but if you have issues with it not working properly delete the property list file and run the command above again.
 
 `rm ~/Library/Preferences/edu.utah.mlib.jamfutil.plist`
-
 
 ## Authenication File Obfuscation
 
@@ -62,7 +75,7 @@ $ cat ~/Library/Preferences/edu.utah.mlib.jamfutil.plist
 </plist>
 ```
 
-# A Few Examples
+# Usage Examples
 
 The api can be interacted with via python3 shell
 
@@ -79,7 +92,8 @@ logger = logging.getLogger(__name__)
 
 # create an jamf.API object (requires requests lib)
 logger.debug("creating api")
-jss = jamf.API(config='private/jss.plist')
+jss = jamf.API()
+#jss = jamf.API(config='private/edu.utah.mlib.jamfutil.plist')
 
 # get any information from your jss using the classic api endpoints
 
@@ -99,14 +113,19 @@ policies = jamf.policy.policies_in_categories(jss, categories[0:2])
 pprint.pprint(policies)
 ```
 
-# Installation
+## Running Tests
 
-In a new shell:
+```bash
+$> cd jctl
 
-```
-$> cd scripts
-$> sudo install.py
-$> echo 'export PYTHONPATH=/Library/Python/3.6/site-packages' >> ~/.profile
+# runs all tests
+$> python3 -m unittest discover -v
+
+# run tests individually
+$> python3 -m jamf.tests.test_api
+$> python3 -m jamf.tests.test_config
+$> python3 -m jamf.tests.test_convert
+$> python3 -m jamf.tests.test_package
 ```
 
 ## Getting Help
