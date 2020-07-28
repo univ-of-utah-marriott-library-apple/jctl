@@ -231,30 +231,3 @@ $> patch.py info /PATH/TO/PACKAGE
 $> patch.py upload /PATH/TO/PACKAGE
 $> patch.py remove <PACKAGE NAME>
 ```
-
-### Packages
-
-As of `1.1` Policy packages can be modified using the following:
-
-```python
-import jamf
-
-# create an jamf.API object (requires requests lib)
-logger.debug("creating api")
-jss = jamf.API(config='private/jss.plist')
-
-policy = jamf.Policy(jss, name="Policy Name")
-
-# add a package named "example.pkg" to the policy (must exist in JSS)
-policy.add_package("example.pkg")
-
-# remove "example.pkg" from the policy
-policy.remove_package("example.pkg")
-
-# add "example.pkg" to be cached
-policy.add_package("example.pkg", action="Cache")
-
-# remove all packages for policy
-policy.remove_all_packages()
-
-```
