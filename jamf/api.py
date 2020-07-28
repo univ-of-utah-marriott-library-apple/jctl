@@ -196,6 +196,27 @@ class API(metaclass=Singleton):
         if not response.ok:
             raise APIError(response)
 
+    def delete(self, endpoint, raw=False):
+        """
+        Delete entry on JSS
+
+        :param endpoint <str>:  API endpoint (e.g. "policies/id/1")
+        :param raw  <bool>:     return requests.Response obj (skip errors)
+
+        :returns <dict|requests.Response>:
+        """
+        url = f"{self.url}/{endpoint}"
+        self.log.debug(f"getting: {endpoint!r}")
+        response = self.session.delete(url)
+
+        if not response.ok:
+            # return raw response before Exception is raised
+            if raw:
+                return response
+            raise APIError(response)
+
+        return convert.xml_to_dict(response.text)
+
     def __del__(self):
         self.log.debug("closing session")
         self.session.close()
