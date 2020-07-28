@@ -80,7 +80,7 @@ $ cat ~/Library/Preferences/edu.utah.mlib.jamfutil.plist
 
 ## Using the API
 
-The API script interacts with Jamf using the get, post, put, and upload commands in combination with the API resources. To see all of your resources, go to the following URL on your server. https://example.com:8443/api
+The API script interacts with Jamf using the get, post, put, and delete commands in combination with the API resources. To see all of your resources, go to the following URL on your server. https://example.com:8443/api
 
 The api can be interacted with via python3 shell. This is how you set it up.
 
@@ -175,14 +175,7 @@ jss.delete("computergroups/name/new name")
 jss.delete("computergroups/id/900")
 ```
 
-## Using the other classes
-
-
-### Examples of 
-
-from jamf.category import Categories
-
-### Running Tests
+## Running Tests
 
 ```bash
 $> cd jctl
@@ -198,6 +191,8 @@ $> python3 -m jamf.tests.test_package
 ```
 
 If you see an error that says something like SyntaxError: invalid syntax, check to see if you're using python3.
+
+## patch.py
 
 ### Getting Help
 ```
