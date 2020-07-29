@@ -61,9 +61,22 @@ class Category:
     def __repr__(self):
         return f"{self.__class__.__name__}({self.id}, {self.name!r})"
 
+class CategoriesIterator:
+    def __init__(self, categories):
+        self._categories = categories
+        self._ids = categories.ids()
+        self._index = 0
+
+    def __next__(self):
+        if self._index < (len(self._ids)):
+            if self._index < len(self._ids):
+                result = self._categories.categoryWithId(self._ids[self._index])
+            self._index +=1
+            return result
+        # End of Iteration
+        raise StopIteration
 
 class Categories(metaclass=Singleton):
-
     _categories = {-1: Category('-1', 'No category assigned')}
 
     def __init__(self, api=None):
@@ -81,6 +94,21 @@ class Categories(metaclass=Singleton):
         if not self.data:
             self.refresh()
         return [x for x in self._names.keys()]
+
+    def ids(self):
+        if not self.data:
+            self.refresh()
+        return [x for x in self._jssids.keys()]
+
+    def categoryWithId(self, x):
+        if not self.data:
+            self.refresh()
+        return self._jssids.get(x)
+
+    def categoryWithName(self, x):
+        if not self.data:
+            self.refresh()
+        return self._names.get(x)
 
     def refresh(self):
         orig_size = int(self.data.get('size', 0))
@@ -121,6 +149,9 @@ class Categories(metaclass=Singleton):
         else:
             raise TypeError(f"can't look for {type(x)}")
         return result
+
+    def __iter__(self):
+        return CategoriesIterator(self)
 
 
 def categories(name='', exclude=()):
