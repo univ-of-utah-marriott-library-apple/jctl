@@ -175,6 +175,25 @@ jss.delete("computergroups/name/new name")
 jss.delete("computergroups/id/900")
 ```
 
+## Categories
+
+```python
+from jamf.category import Categories
+allcategories = Categories()
+allcategories.names()
+allcategories.ids()
+allcategories.categoryWithName("Utilities")
+allcategories.categoryWithId(141)
+
+for item in allcategories:
+    repr(item)
+
+category = Categories().find("Utilities")
+repr(category)
+category = Categories().find(141)
+repr(category)
+```
+
 ## Running Tests
 
 ```bash
