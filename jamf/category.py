@@ -16,6 +16,7 @@ from .api import API
 
 class Singleton(type):
     _instances = {}
+
     def __call__(cls, *a, **kw):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*a, **kw)
@@ -61,6 +62,7 @@ class Category:
     def __repr__(self):
         return f"{self.__class__.__name__}({self.id}, {self.name!r})"
 
+
 class CategoriesIterator:
     def __init__(self, categories):
         self._categories = categories
@@ -70,13 +72,16 @@ class CategoriesIterator:
     def __next__(self):
         if self._index < (len(self._ids)):
             if self._index < len(self._ids):
-                result = self._categories.categoryWithId(self._ids[self._index])
-            self._index +=1
+                id = self._ids[self._index]
+                result = self._categories.categoryWithId(id)
+            self._index += 1
             return result
         # End of Iteration
         raise StopIteration
 
+
 class Categories(metaclass=Singleton):
+
     _categories = {-1: Category('-1', 'No category assigned')}
 
     def __init__(self, api=None):
@@ -116,7 +121,6 @@ class Categories(metaclass=Singleton):
         updated_size = int(self.data['size'])
         if orig_size != updated_size:
             for d in self.data['category']:
-                # c = self._categories.setdefault(d['id'], Category.fromDict(d))
                 c = Category(d['id'], d['name'])
                 self._categories.setdefault(int(d['id']), c)
                 self._names.setdefault(c.name, c)
@@ -165,5 +169,5 @@ def categories(name='', exclude=()):
     """
     # exclude specified categories by full name
     included = [c for c in Categories() if c.name not in exclude]
-    #NOTE: empty string ('') always in all other strings
+    # NOTE: empty string ('') always in all other strings
     return [c for c in included if name in c.name]
