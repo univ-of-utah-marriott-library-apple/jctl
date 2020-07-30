@@ -175,6 +175,64 @@ jss.delete("computergroups/name/new name")
 jss.delete("computergroups/id/900")
 ```
 
+### Example: Updating policies en masse
+
+The following example searches all policies for the custom trigger "update_later" and replaces it with "update_now".
+
+```python
+#!/usr/bin/env python3
+
+import jamf
+
+jss = jamf.API()
+all_policies = jss.get('policies')['policies']['policy']
+for policy_hook in all_policies:
+    policy = jss.get(f"policies/id/{policy_hook['id']}")
+    name = policy['policy']['general']['name']
+    custom_trigger = policy['policy']['general']['trigger_other']
+    print(f"Working on {name}")
+    if (custom_trigger == "update_later"):
+        policy['policy']['general']['trigger_other'] = "update_now"
+        jss.put(f"policies/id/{policy_hook['id']}", policy)
+        print(f"Changed custom trigger from {custom_trigger} to update_now")
+```
+
+The next example prints out the code you'd need to enter into a python3 repl to set the custom_triggers. Save the output of this script to a file, then edit the file with the custom triggers you want for each item. Delete the items you don't want to change.
+
+```python
+#!/usr/bin/env python3
+
+import jamf
+
+jss = jamf.API()
+all_policies = jss.get('policies')['policies']['policy']
+
+print("""#!/usr/bin/env python3
+
+import jamf
+
+jss = jamf.API()
+""")
+
+for policy_hook in all_policies:
+    policy = jss.get(f"policies/id/{policy_hook['id']}")
+    custom_trigger = policy['policy']['general']['trigger_other']
+    print(f"print(f\"Working on {policy['policy']['general']['name']}\")\n"
+          f"policy = jss.get(\"policies/id/{policy_hook['id']}\")\n"
+          f"policy['policy']['general']['trigger_other'] = "
+          f"\"{policy['policy']['general']['trigger_other']}\"\n"
+          f"jss.put(\"policies/id/{policy_hook['id']}\", policy)\n\n")
+```
+
+Save the script as "custom_triggers_1.py" Run it like this.
+
+```bash
+./custom_triggers_1.py > custom_triggers_2.py
+chmod 755 custom_triggers_2.py
+```
+
+Then edit custom_triggers_2.py with the custom triggers you want (and remove what you don't want to modify). Then run custom_triggers_2.py.
+
 ## Categories
 
 ```python
