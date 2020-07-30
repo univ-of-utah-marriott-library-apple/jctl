@@ -263,18 +263,6 @@ category = Categories().find(141)
 repr(category)
 ```
 
-
-## Using JSSObject
-
-from jamf.jssobjects import ActivationCode, ComputerCheckIn, ComputerInventoryCollection, GSXConnection, JSONWebTokenConfigurations, SMTPServer
-bla = ActivationCode()
-bla.retrieve()
-pprint(bla.data)
-bla.data['activation_code']['organization_name'] = "Wrong"
-bla.put()
-
-from jamf import jssobjects
-
 ## Running Tests
 
 ```bash
