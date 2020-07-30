@@ -103,7 +103,7 @@ logger.debug("creating api")
 jss = jamf.API()
 ```
 
-### Examples of getting data.
+### Example: Getting data.
 
 Note: The API get method downloads the data from Jamf. If you store it in a variable, it does not update itself. If you make changes on the server, you'll need to run the API get again.
 
@@ -149,7 +149,7 @@ computergroupids = [i['id'] for i in computergroups]
 pprint(computergroupids)
 ```
 
-### Example of posting data.
+### Example: Posting data.
 
 ```python
 # Create a new static computer group. Note, the id in the url ("1") is ignored and the next available id is used. The name in the url ("ignored") is also ignored and the name in the data ("realname") is what is actually used.
@@ -158,7 +158,7 @@ jss.post("computergroups/id/1",json.loads( '{"computer_group": {"name": "test", 
 jss.post("computergroups/name/ignored",json.loads( '{"computer_group": {"name": "realname", "is_smart": "false", "site": {"id": "-1", "name": "None"}, "criteria": {"size": "0"}, "computers": {"size": "0"}}}' ))
 ```
 
-### Examples of updating data.
+### Example: Updating data.
 
 ```python
 # Create a new static computer group. Note, the id ("1") is ignored and the next available id is used.
@@ -168,14 +168,16 @@ jss.put("computergroups/name/realname",json.loads( '{"computer_group": {"name": 
 jss.put("computergroups/id/900",json.loads( '{"computer_group": {"name": "newer name", "is_smart": "false", "site": {"id": "-1", "name": "None"}, "criteria": {"size": "0"}, "computers": {"size": "0"}}}' ))
 ```
 
-### Examples of deleting data.
+### Example: Deleting data.
 
 ```python
 jss.delete("computergroups/name/new name")
 jss.delete("computergroups/id/900")
 ```
 
-### Example: Updating policies en masse
+### Example: Updating policies en masse.
+
+This is where the real power of this utility comes in.
 
 The following example searches all policies for the custom trigger "update_later" and replaces it with "update_now".
 
@@ -232,6 +234,15 @@ chmod 755 custom_triggers_2.py
 ```
 
 Then edit custom_triggers_2.py with the custom triggers you want (and remove what you don't want to modify). Then run custom_triggers_2.py.
+
+### Updating policies en masse.
+
+Scripts that do very similar things as the above two scripts are as follows:
+
+* policy_categories.py, allows you to change all policy categories at once
+* policy_packages.py, allows you to change all policy packages at once
+
+Please see the headers of these scripts for instructions. They aren't exactly normal scripts. This is still 0.1.
 
 ## Categories
 
