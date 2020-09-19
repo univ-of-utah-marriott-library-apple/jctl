@@ -54,75 +54,43 @@ __author__ = 'James Reynolds'
 __email__ = 'reynolds@biology.utah.edu'
 __copyright__ = 'Copyright (c) 2020, The University of Utah'
 __license__ = 'MIT'
-__version__ = "0.1"
+__version__ = "1.0.4"
 
 
 import jamf
 import re
-from pprint import pprint
+
 
 mass_edit = {
 }
 
 jss = jamf.API()
-policies = jss.getNamedIds('policies')
-pkgs = jss.getNamedIds('packages')
-computer_grps = jss.getNamedDicts('computergroups')
+pkgs = jss.getNamedDicts('packages')
+policies = jss.getNamedDicts('policies')
 
 if len(mass_edit) == 0:
     used_pkgs = {}
     for policy_name in policies:
-        policy_id = policies[policy_name]
-        policy = jss.get(f"policies/id/{policy_id}")
-
-        policy_pkgs = jss.convertJSSPathToNamedIds(
+        policy = jss.get(f"policies/id/{policies[policy_name]}")
+        policy_pkgs = jss.convertJSSPathToNamedArray(
             policy, ['policy', 'package_configuration', 'packages', 'package'])
         if len(policy_pkgs) > 0:
-            mass_edit[policy_name] = {'pkgs': policy_pkgs}
+            mass_edit[policy_name] = [*policy_pkgs]
             for pkg_name in policy_pkgs:
                 used_pkgs[pkg_name] = True
-
-#        policy_grps = jss.convertJSSPathToNamedIds(
-#            policy, ['policy', 'scope', 'computer_groups', 'computer_group'])
-#        if len(policy_grps) > 0:
-
-#            for policy_grp in policy_grps:
-
-#                if policy_grp in computer_grps:
-#                    if 'is_smart' in grps[policy_grp]:
-
-#                         print("------------------------------------")
-#                         print(f"{policy_name}")
-#                         pprint(policy_grps)
-
-#             new_list = []
-#             for i in old_list:
-#                 if filter(i):
-#                     new_list.append(expressions(i))
-#
-#             new_list = [expression(i) for i in old_list if filter(i)]
-#
-#             filter: policy_grp in computer_grps and 'is_smart' in grps[policy_grp]
 
     unused_pkgs = list(filter(lambda i: i not in used_pkgs, pkgs))
     print("mass_edit = {")
     for policy_name in mass_edit:
-        print(f"    '{policy_name}': {{")
-        print("        'pkgs': {")
-        for pkg in mass_edit[policy_name]['pkgs']:
-            print(f"            '{pkg}',")
+        print(f"    '{policy_name}': [")
+        for pkg in mass_edit[policy_name]:
+            print(f"        '{pkg}',")
             prefix = re.sub(r"^(...[^\d]*).*", "\\1", pkg)
             for unused_pkg in unused_pkgs:
                 if re.match(prefix, unused_pkg):
-                    print(f"#            '{unused_pkg}',")
+                    print(f"#        '{unused_pkg}',")
                     used_pkgs[unused_pkg] = True
-        print("        },")
-        print("        'grps': {")
-
-# groups here
-
-        print("        },")
-        print("    },")
+        print("    ],")
     print("}")
     print("# Unused Packages:")
     unused_pkgs = list(filter(lambda ii: ii not in used_pkgs, pkgs))
@@ -131,7 +99,7 @@ if len(mass_edit) == 0:
 else:
     for policy_name in mass_edit:
         print(f"Working on {policy_name}")
-        pkg_arr = mass_edit[policy_name]['pkgs']
+        pkg_arr = mass_edit[policy_name]
         if policy_name not in policies:
             print(f"ERROR: Policy \"{policy_name}\" is unknown")
             exit(1)
@@ -158,7 +126,3 @@ else:
                 policy_pkgs['package'][pkg_index]['id'] = new_pkg_id
                 policy_pkgs['package'][pkg_index]['name'] = pkg_name
         jss.put(f"policies/id/{policy_id}", policy)
-
-# groups here
-
-        grp_arr = mass_edit[policy_name]['grps']
