@@ -37,7 +37,7 @@ __author__ = 'James Reynolds'
 __email__ = 'reynolds@biology.utah.edu'
 __copyright__ = 'Copyright (c) 2020, The University of Utah'
 __license__ = 'MIT'
-__version__ = "1.0.4"
+__version__ = "0.1"
 
 
 import jamf
@@ -47,11 +47,8 @@ mass_edit = {
 }
 
 jss = jamf.API()
-temp_categories = jss.get('categories')['categories']['category']
-categories = {ii['name']: ii['id'] for ii in temp_categories}
-categories['No category assigned'] = -1
-temp_policies = jss.get('policies')['policies']['policy']
-policies = {ii['name']: ii['id'] for ii in temp_policies}
+categories = jss.getNamedIds('categories')
+policies = jss.getNamedIds('policies')
 
 if len(mass_edit) == 0:
     for policy_name in policies:
