@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+#pylint: disable=relative-beyond-top-level, too-few-public-methods, unused-argument
+#pylint: disable=missing-class-docstring, missing-function-docstring
 """
 Tests for JSS API
 """
@@ -10,11 +11,8 @@ __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
 __version__ = "0.0.0"
 
-import pprint
-import plistlib
 import unittest
 import logging
-import requests
 
 from .. import api
 
@@ -29,14 +27,14 @@ class MockResponse:
         self.request.method = data.get('method', 'GET')
         self.url = data.get('url', 'http://mock.url')
         if path:
-            with open(path, 'rb') as f:
-                self.text = f.read()
+            with open(path, 'rb') as fptr:
+                self.text = fptr.read()
         else:
             self.text = data.get('text', '')
 
     @property
-    def ok(self):
-        return True if (200 <= self.return_code <= 400) else False
+    def ok(self): #pylint: disable=invalid-name
+        return 200 <= self.return_code <= 400
 
 
 class MockSession:
@@ -71,20 +69,20 @@ class TestAPI(unittest.TestCase):
 
 
 UNAUTHORIZED = ('<html>\n'
-                 '<head>\n'
-                  '<title>Status page</title>\n'
-                 '</head>\n'
-                 '<body style="font-family: sans-serif;">\n'
-                  '<p style="font-size: 1.2em;font-weight: bold;margin: 1em '
-                   '0px;">Unauthorized</p>\n'
-                  '<p>The request requires user authentication</p>\n'
-                  '<p>You can get technical details '
-                   '<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.'
-                   'html#sec10.4.2">here</a>.<br>\n'
-                   'Please continue your visit at our '
-                   '<a href="/">home page</a>.\n'
-                  '</p>\n'
-                 '</body>\n'
+                '<head>\n'
+                '<title>Status page</title>\n'
+                '</head>\n'
+                '<body style="font-family: sans-serif;">\n'
+                '<p style="font-size: 1.2em;font-weight: bold;margin: 1em '
+                '0px;">Unauthorized</p>\n'
+                '<p>The request requires user authentication</p>\n'
+                '<p>You can get technical details '
+                '<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.'
+                'html#sec10.4.2">here</a>.<br>\n'
+                'Please continue your visit at our '
+                '<a href="/">home page</a>.\n'
+                '</p>\n'
+                '</body>\n'
                 '</html>\n')
 
 
@@ -102,11 +100,11 @@ class TestAPIError(unittest.TestCase):
         """
         expected = 'failed'
         self.response.text = ''
-        e = api.APIError(self.response)
-        result = e.message
+        err = api.APIError(self.response)
+        result = err.message
         self.assertEqual(expected, result)
         with self.assertRaises(api.APIError):
-            raise e
+            raise err
 
     def test_none_response_text(self):
         """
@@ -114,35 +112,35 @@ class TestAPIError(unittest.TestCase):
         """
         expected = 'failed'
         self.response.text = None
-        e = api.APIError(self.response)
-        result = e.message
+        err = api.APIError(self.response)
+        result = err.message
         self.assertEqual(expected, result)
         with self.assertRaises(api.APIError):
-            raise e
+            raise err
 
     def test_unauthorized_response_text(self):
         """
         Test APIError parses response.text
         """
-        e = api.APIError(self.response)
+        err = api.APIError(self.response)
         expected = "Unauthorized: The request requires user authentication"
-        result = str(e)
+        result = str(err)
         self.assertTrue(result.endswith(expected))
 
     def test_attribute_fallback(self):
         """
         Test missing attributes fall back to request.Response
         """
-        e = api.APIError(self.response)
-        self.assertEqual(401, e.return_code)
+        err = api.APIError(self.response)
+        self.assertEqual(401, err.return_code)
 
     def test_attribute_fallback_missing(self):
         """
         Test non-request.Response attributes still raise AttributeError
         """
-        e = api.APIError(self.response)
+        err = api.APIError(self.response)
         with self.assertRaises(AttributeError):
-            e.undefined_attribute
+            unused = err.undefined_attribute #pylint: disable=unused-variable
 
 
 class TestParseError(unittest.TestCase):
@@ -155,7 +153,7 @@ class TestParseError(unittest.TestCase):
         result = api.parse_html_error('')
         self.assertEqual(expected, result)
 
-    def test_parse_None(self):
+    def test_parse_none(self):
         """
         test parse_html_error return empty list on None
         """
@@ -188,13 +186,13 @@ class TestJSSErrorParser(unittest.TestCase):
         result = api.JSSErrorParser('').find_all('p')
         self.assertEqual(expected, result)
 
-    def test_parse_None(self):
+    def test_parse_none(self):
         expected = []
         result = api.JSSErrorParser(None).find_all('p')
         self.assertEqual(expected, result)
 
 
 if __name__ == '__main__':
-    fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
-    logging.basicConfig(level=logging.DEBUG, format=fmt)
+    FMT = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
+    logging.basicConfig(level=logging.DEBUG, format=FMT)
     unittest.main(verbosity=1)

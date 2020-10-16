@@ -68,6 +68,7 @@ jss = jamf.API()
 policies = jss.getNamedIds('policies')
 pkgs = jss.getNamedIds('packages')
 computer_grps = jss.getNamedDicts('computergroups')
+# pprint(computer_grps)
 
 if len(mass_edit) == 0:
     used_pkgs = {}
@@ -82,26 +83,21 @@ if len(mass_edit) == 0:
             for pkg_name in policy_pkgs:
                 used_pkgs[pkg_name] = True
 
-#        policy_grps = jss.convertJSSPathToNamedIds(
-#            policy, ['policy', 'scope', 'computer_groups', 'computer_group'])
-#        if len(policy_grps) > 0:
-
-#            for policy_grp in policy_grps:
-
-#                if policy_grp in computer_grps:
-#                    if 'is_smart' in grps[policy_grp]:
-
-#                         print("------------------------------------")
-#                         print(f"{policy_name}")
-#                         pprint(policy_grps)
+            policy_grps = jss.convertJSSPathToNamedIds(
+                policy, ['policy', 'scope', 'computer_groups', 'computer_group'])
+            if len(policy_grps) > 0:
+                mass_edit[policy_name]['smart_groups'] = []
+                for policy_grp in policy_grps:
+                    if (policy_grp in computer_grps and
+                       'is_smart' in computer_grps[policy_grp] and
+                       computer_grps[policy_grp]['is_smart']):
+                        mass_edit[policy_name]['smart_groups'].append(policy_grp)
 
 #             new_list = []
 #             for i in old_list:
 #                 if filter(i):
 #                     new_list.append(expressions(i))
-#
 #             new_list = [expression(i) for i in old_list if filter(i)]
-#
 #             filter: policy_grp in computer_grps and 'is_smart' in grps[policy_grp]
 
     unused_pkgs = list(filter(lambda i: i not in used_pkgs, pkgs))
@@ -119,15 +115,15 @@ if len(mass_edit) == 0:
         print("        },")
         print("        'grps': {")
 
-# groups here
-
+        for group in mass_edit[policy_name]['smart_groups']:
+            print(f"            '{group}',")
         print("        },")
         print("    },")
     print("}")
     print("# Unused Packages:")
     unused_pkgs = list(filter(lambda ii: ii not in used_pkgs, pkgs))
-    for unused_pkg in unused_pkgs:
-        print(f"#        '{unused_pkg}',")
+#     for unused_pkg in unused_pkgs:
+#         print(f"#        '{unused_pkg}',")
 else:
     for policy_name in mass_edit:
         print(f"Working on {policy_name}")

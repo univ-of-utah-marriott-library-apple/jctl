@@ -1,7 +1,12 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
 JSS API
+Modifications by Tony Williams (tonyw@honestpuck.com) (ARW)
+Modifications have been to make "raw=True" always return raw, removed the
+ability to ask for json, and simplified the config code. It no longer
+asks for config but reads a config file in AutoPkg format.
 """
 
 __author__ = 'Sam Forester'
@@ -10,31 +15,29 @@ __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
 __version__ = "0.3.0"
 
-import logging
-import pathlib
-import requests
-# import plistlib
-import subprocess
 import html.parser
+import logging
+import logging.handlers
+import pathlib
+from os import path
+import plistlib
+import subprocess
+import requests
 
-
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    # will rely on JSSErrorParser
-    pass
-
-# local imports
 from . import convert
 from . import config
 
+LOGLEVEL = logging.DEBUG
 
+#pylint: disable=unnecessary-pass
 class Error(Exception):
+    """ just passing through """
     pass
 
 
+#pylint: disable=super-init-not-called
 class APIError(Error):
-
+    """ Error in our call """
     def __init__(self, response):
         self.response = response
         err = parse_html_error(response.text)
@@ -47,13 +50,13 @@ class APIError(Error):
         return getattr(self.response, attr)
 
     def __str__(self):
-        r = self.response
-        return f"{r}: {r.request.method} - {r.url}: {self.message}"
+        rsp = self.response
+        return f"{rsp}: {rsp.request.method} - {rsp.url}: {self.message}"
 
 
 class Singleton(type):
+    """ allows us to share a single object """
     _instances = {}
-
     def __call__(cls, *a, **kw):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*a, **kw)
@@ -64,30 +67,45 @@ class API(metaclass=Singleton):
     """
     Class for making api calls to JSS
     """
+    session = False
 
-#        'healthcarelistener': [
-#             'healthcare_listeners',
-#             'healthcare_listener'
-#         ],
-#        'healthcarelistenerrule': [
-#             'healthcarel_istener_rule2',
-#             'healthcarel_istener_rule'
-#         ],
-
-    def __init__(self, hostname=None, auth=(), path=None):
+    def __init__(self, autopkg_config=None, hostname=None, auth=None, config_path=None):
         """
         Create requests.Session with JSS address and authentication
 
-        :param address <str>:   JSS address (e.g. 'your.jss.domain')
-        :param auth <tuple>:    JSS authentication credentials (user, passwd)
+        :param autopkg_config <str>: Path to file containing config. If it
+                                     starts with '~' character we pass it
+                                     to expanduser.
+        :param hostname <str>:       hostname of server
+        :param auth <(str, str)>:    (username, password) for server
         """
         self.log = logging.getLogger(f"{__name__}.API")
-        conf = config.SecureConfig(path=path)
-        # get url from /Library/Preferences/com.jamfsoftware.jamf.plist?
-        hostname = hostname or conf.get('JSSHostname', prompt='JSS Hostname')
-        self.url = f"https://{hostname}:8443/JSSResource"
+        self.log.setLevel(LOGLEVEL)
+
+        conf = config.SecureConfig(path=config_path)
+        if conf.exists():
+            # get url from /Library/Preferences/com.jamfsoftware.jamf.plist?
+            hostname = hostname or conf.get('JSSHostname', prompt='JSS Hostname')
+            auth = conf.credentials(hostname, auth)
+            hostname = f"https://{hostname}:8443"
+
+        if not hostname:
+            if not autopkg_config:
+                autopkg_config = "~/Library/Preferences/com.github.autopkg.plist"
+
+            if autopkg_config[0] == '~':
+                plist = path.expanduser(autopkg_config)
+            else:
+                plist = autopkg_config
+            fptr = open(plist, 'rb')
+            prefs = plistlib.load(fptr)
+            fptr.close()
+            hostname = prefs["JSS_URL"]
+            auth = (prefs["API_USERNAME"], prefs["API_PASSWORD"])
+
+        self.url = f"{hostname}/JSSResource"
         self.session = requests.Session()
-        self.session.auth = conf.credentials(hostname, auth)
+        self.session.auth = auth
         self.session.headers.update({'Accept': 'application/xml'})
 
         # The commented ones are untested because I don't have any data of that
@@ -382,31 +400,24 @@ class API(metaclass=Singleton):
 #             ],
         }
 
-    def get(self, endpoint, json=False, raw=False):
+    def get(self, endpoint, raw=False):
         """
         Get JSS information
 
         :param endpoint <str>:  API endpoint (e.g. "policies/id/1")
-        :param json <bool>:     request JSON response (sometimes incomplete)
-        :param raw  <bool>:     return requests.Response obj (skip errors)
+        :param raw <bool>:      return requests.Response obj  (skip errors)
 
         :returns <dict|requests.Response>:
         """
         url = f"{self.url}/{endpoint}"
-        self.log.debug(f"getting: {endpoint!r}")
+        self.log.debug("getting: %s", endpoint)
+        response = self.session.get(url)
 
-        # modify headers for JSON (if applicable)
-        headers = {'Accept': 'application/json'} if json else {}
-        response = self.session.get(url, headers=headers)
-
+        if raw:
+            return response
         if not response.ok:
-            # return raw response before Exception is raised
-            if raw:
-                return response
             raise APIError(response)
-
-        # return json or converted XML
-        return response.json() if json else convert.xml_to_dict(response.text)
+        return convert.xml_to_dict(response.text)
 
     def post(self, endpoint, data, raw=False):
         """
@@ -414,22 +425,22 @@ class API(metaclass=Singleton):
 
         :param endpoint <str>:  JSS endpoint (e.g. "policies/id/0")
         :param data <dict>:     data to be submitted
+        :param raw <bool>:      return requests.Response obj  (skip errors)
 
         :returns dict:          response data
         """
         url = f"{self.url}/{endpoint}"
-        self.log.debug(f"creating: {endpoint!r}")
+        self.log.debug("creating: %s", endpoint)
         if isinstance(data, dict):
             data = convert.dict_to_xml(data)
         response = self.session.post(url, data=data)
 
+        if raw:
+            return response
         if not response.ok:
-            # return raw response before Exception is raised
-            if raw:
-                return response
             raise APIError(response)
 
-        # return succesful response data (usually {'id': jssid})
+        # return successfull response data (usually: {'id': jssid})
         return convert.xml_to_dict(response.text)
 
     def put(self, endpoint, data, raw=False):
@@ -438,66 +449,23 @@ class API(metaclass=Singleton):
 
         :param endpoint <str>:  JSS endpoint (e.g. "policies/id/0")
         :param data <dict>:     data to be submitted
+        :param raw <bool>:      return requests.Response obj  (skip errors)
 
         :returns dict:          response data
         """
         url = f"{self.url}/{endpoint}"
-        self.log.debug(f"updating: {endpoint!r}")
+        self.log.debug("updating: %s", endpoint)
         if isinstance(data, dict):
             data = convert.dict_to_xml(data)
         response = self.session.put(url, data=data)
 
+        if raw:
+            return response
         if not response.ok:
-            # return raw response before Exception is raised
-            if raw:
-                return response
             raise APIError(response)
 
-        # return succesful response data (usually: {'id': jssid})
+        # return successful response data (usually: {'id': jssid})
         return convert.xml_to_dict(response.text)
-
-    def upload(self, endpoint, path, name=None, mime_type=None):
-        """
-        Upload files to JSS
-
-        :param endpoint <str>:  JSS fileuploads endpoint (e.g. "policies/id/0")
-        :param path <str>:      Path to file
-
-        Optional:
-        :param name <str>:      Name of file (requires extension)
-        :param mime_type <str>: MIME type (e.g. 'image/png')
-
-        if unspecified, MIME type will attempt to be calculated via `file`
-
-        :returns None:
-        """
-        url = f"{self.url}/fileuploads/{endpoint}"
-        path = pathlib.Path(path)
-        self.log.debug(f"uploading: {url!r}: {path}")
-
-        if not path.exists():
-            raise FileNotFoundError(path)
-        # determine filename (if unspecified)
-        name = name or path.name()
-
-        # NOTE: JSS requires filename extension (or upload will fail)
-        if not path.suffix:
-            raise Error(f"missing file extension: {path}")
-
-        # determine mime-type of file (if unspecified)
-        mime_type = mime_type or file_mime_type(path)
-
-        with open(path, 'rb') as f:
-            # Example of posted data:
-            # {'name': ('example.png',
-            #           <_io.BufferedReader name="./example.png">,
-            #           'image/png')}
-            files = {'name': (name, f, mime_type)}
-            self.log.debug(f"files: {files}")
-            response = self.session.post(url, files=files)
-
-        if not response.ok:
-            raise APIError(response)
 
     def delete(self, endpoint, raw=False):
         """
@@ -509,15 +477,15 @@ class API(metaclass=Singleton):
         :returns <dict|requests.Response>:
         """
         url = f"{self.url}/{endpoint}"
-        self.log.debug(f"getting: {endpoint!r}")
+        self.log.debug("getting: %s", endpoint)
         response = self.session.delete(url)
 
+        if raw:
+            return response
         if not response.ok:
-            # return raw response before Exception is raised
-            if raw:
-                return response
             raise APIError(response)
 
+        # return successful response data (usually: {'id': jssid})
         return convert.xml_to_dict(response.text)
 
     def convertJSSPathToArray(self, mydict, path):
@@ -668,7 +636,7 @@ class API(metaclass=Singleton):
         self.log.debug("closing session")
         self.session.close()
 
-
+#pylint: disable=too-few-public-methods, abstract-method
 class _DummyTag:
     """
     Minimal mock implementation of bs4.element.Tag (only has text attribute)
@@ -689,11 +657,11 @@ class JSSErrorParser(html.parser.HTMLParser):
     ['Unauthorized', 'The request requires user authentication',
      'You can get technical details here. {...}']
     """
-    def __init__(self, html):
+    def __init__(self, _html):
         super().__init__()
         self._data = {}
-        if html:
-            self.feed(html)
+        if _html:
+            self.feed(_html)
 
     def find_all(self, tag):
         """
@@ -704,6 +672,7 @@ class JSSErrorParser(html.parser.HTMLParser):
         """
         return self._data.get(tag, [])
 
+    #pylint: disable=attribute-defined-outside-init
     def handle_data(self, data):
         """
         override HTMLParser().handle_data()
@@ -723,26 +692,68 @@ class JSSErrorParser(html.parser.HTMLParser):
         self._data[tag].append(self._dummytag)
 
 
-def parse_html_error(html):
+def parse_html_error(error):
     """
     Get meaningful error information from JSS Error response HTML
 
     :param html <str>:  JSS HTML error text
     :returns <list>:    list of meaningful error strings
     """
-    if not html:
+    if not error:
         return []
     try:
-        soup = BeautifulSoup(html, features="html.parser")
+        soup = BeautifulSoup(error, features="html.parser")
     except NameError:
         # was unable to import BeautifulSoup
-        soup = JSSErrorParser(html)
+        soup = JSSErrorParser(error)
     # e.g.: ['Unauthorized', 'The request requires user authentication',
     #        'You can get technical details here. (...)']
     # NOTE: get first two <p> tags from HTML error response
     #       3rd <p> is always 'You can get technical details here...'
     return [t.text for t in soup.find_all('p')][0:2]
 
+    def upload(self, endpoint, path, name=None, mime_type=None):
+        """
+        Upload files to JSS
+
+        :param endpoint <str>:  JSS fileuploads endpoint (e.g. "policies/id/0")
+        :param path <str>:      Path to file
+
+        Optional:
+        :param name <str>:      Name of file (requires extension)
+        :param mime_type <str>: MIME type (e.g. 'image/png')
+
+        if unspecified, MIME type will attempt to be calculated via `file`
+
+        :returns None:
+        """
+        url = f"{self.url}/fileuploads/{endpoint}"
+        path = pathlib.Path(path)
+        self.log.debug(f"uploading: {url!r}: {path}")
+
+        if not path.exists():
+            raise FileNotFoundError(path)
+        # determine filename (if unspecified)
+        name = name or path.name()
+
+        # NOTE: JSS requires filename extension (or upload will fail)
+        if not path.suffix:
+            raise Error(f"missing file extension: {path}")
+
+        # determine mime-type of file (if unspecified)
+        mime_type = mime_type or file_mime_type(path)
+
+        with open(path, 'rb') as f:
+            # Example of posted data:
+            # {'name': ('example.png',
+            #           <_io.BufferedReader name="./example.png">,
+            #           'image/png')}
+            files = {'name': (name, f, mime_type)}
+            self.log.debug(f"files: {files}")
+            response = self.session.post(url, files=files)
+
+        if not response.ok:
+            raise APIError(response)
 
 def file_mime_type(path):
     """

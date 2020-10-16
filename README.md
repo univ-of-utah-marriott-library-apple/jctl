@@ -314,3 +314,10 @@ $> patch.py info /PATH/TO/PACKAGE
 $> patch.py upload /PATH/TO/PACKAGE
 $> patch.py remove <PACKAGE NAME>
 ```
+
+## Contributers
+
+Sam Forester
+James Reynolds
+Topher Nadauld
+Tony Williams
