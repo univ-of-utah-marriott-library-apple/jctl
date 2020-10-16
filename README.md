@@ -317,7 +317,7 @@ $> patch.py remove <PACKAGE NAME>
 
 ## Contributers
 
-Sam Forester
-James Reynolds
-Topher Nadauld
-Tony Williams
+- Sam Forester
+- James Reynolds
+- Topher Nadauld
+- Tony Williams
