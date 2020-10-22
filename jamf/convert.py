@@ -16,26 +16,30 @@ from collections import defaultdict
 
 
 class Error(Exception):
+    """ just passing through """
     pass
 
 
-def etree_to_dict(x):
+def etree_to_dict(elem):
     """
     converts xml.cElementTree to python dict
     adapted from: https://stackoverflow.com/a/10077069/12020818
     removed attribute support
     """
-    result = {x.tag: None}
-    children = list(x)
+    result = {elem.tag: None}
+    children = list(elem)
     if children:
-        dd = defaultdict(list)
-        for dc in map(etree_to_dict, children):
-            for k, v in dc.items():
-                dd[k].append(v)
-        result = {x.tag: {k:v[0] if len(v) == 1 else v for k, v in dd.items()}}
-    elif x.text:
-        result[x.tag] = x.text.strip()
-
+        defd = defaultdict(list)
+        for dct in map(etree_to_dict, children):
+            for key, val in dct.items():
+                defd[key].append(val)
+        result = {
+            elem.tag: {
+                key:val[0] if len(val) == 1 else val for key, val in defd.items()
+            }
+        }
+    elif elem.text:
+        result[elem.tag] = elem.text.strip()
     return result
 
 
