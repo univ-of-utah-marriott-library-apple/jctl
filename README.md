@@ -1,10 +1,10 @@
-# jctl
+# python-jamf
 
 This is a Python 3 utility for maintaining & automating Jamf Pro patch management via command-line. The idea behind it is to have a class that maps directly to the Jamf API (https://example.com:8443/api). The API class doesn't abstract anything or hide anything from you. It simply wraps the url requests, authentication, and converts between python dictionaries and xml. It also prints json.
 
 ## Requirements
 
-The jctl project requires python3 and requests library. Please make sure you have those by running the following commands.
+The python-jamf project requires python3 and requests library. Please make sure you have those by running the following commands.
 
 ```bash
 $> python3
@@ -85,7 +85,7 @@ The API script interacts with Jamf using the get, post, put, and delete commands
 The api can be interacted with via python3 shell. This is how you set it up.
 
 ```bash
-$> cd jctl
+$> cd python-jamf
 $> python3
 ```
 
@@ -266,7 +266,7 @@ repr(category)
 ## Running Tests
 
 ```bash
-$> cd jctl
+$> cd python-jamf
 
 # runs all tests
 $> python3 -m unittest discover -v
