@@ -11,45 +11,53 @@ __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
 __version__ = "1.0.4"
 
-
-import sys
-import logging
-import pprint
-import pathlib
 import argparse
-
+import getpass
 import jamf
-import jamf.admin
-from jamf.package import Package
-import jamf.config
-
+import logging
+import platform
+import pprint
+import sys
 
 class Parser:
 
     def __init__(self):
+        myplatform = platform.system()
+        if myplatform == "Darwin":
+            default_pref = jamf.config.MACOS_PREFS
+        elif myplatform == "Linux":
+            default_pref = jamf.config.LINUX_PREFS
+
         self.parser = argparse.ArgumentParser()
-
-        desc = 'see `%(prog)s COMMAND --help` for more information'
-        self.subparsers = self.parser.add_subparsers(title='COMMANDS',
-                                                     dest='cmd',
-                                                     description=desc)
-        # listing
-        test = self.subparsers.add_parser('test', help='Test',
-                                          description="tests the config")
-
-        # config
-        config = self.subparsers.add_parser('config', help='modify config',
-                                            description="modify config")
-        config.add_argument('-H', '--hostname',
-                            help='use username instead of prompting')
-        config.add_argument('-u', '--user',
-                            help='use username instead of prompting')
-        config.add_argument('-p', '--passwd',
-                            help='specify password (default: prompt)')
-        config.add_argument('-c', '--config', dest='path', metavar='PATH',
-                            help=f"specify config file (default: {jamf.config.PREFERENCES})")
-        config.add_argument('-d', '--delete', action='store_true',
-                            help='delete existing config profile')
+        self.parser.add_argument(
+            '-H',
+            '--hostname',
+            help='specify hostname (default: prompt)')
+        self.parser.add_argument(
+            '-u',
+            '--user',
+            help='specify username (default: prompt)')
+        self.parser.add_argument(
+            '-p',
+            '--passwd',
+            help='specify password (default: prompt)')
+        self.parser.add_argument(
+            '-c',
+            '--config',
+            dest='path',
+            metavar='PATH',
+            default=default_pref,
+            help=f"specify config file (default {default_pref})")
+        self.parser.add_argument(
+            '-P',
+            '--print',
+            action='store_true',
+            help='print existing config profile (except password!)')
+        self.parser.add_argument(
+            '-t',
+            '--test',
+            action='store_true',
+            help='Connect to the Jamf server using the config file')
 
     def parse(self, argv):
         """
@@ -64,26 +72,46 @@ def main(argv):
     args = Parser().parse(argv)
     logger.debug(f"args: {args!r}")
 
-    api = jamf.API()
+    if args.test:
+        api = jamf.API()
+        pprint.pprint(api.get('accounts'))
 
-    if args.cmd == 'test':
-        logger.debug("creating api")
-        jss = jamf.API()
-        pprint.pprint(jss.get('accounts'))
-
-    elif args.cmd == 'config':
-        conf = jamf.config.SecureConfig(args.path)
-        if args.delete:
-            conf.reset()
-            raise SystemExit(f"deleted: {conf.path}")
-        hostname = args.hostname
-        if hostname:
-            conf.set('JSSHostname', hostname)
+    elif args.print:
+        conf = jamf.config.Config(prompt=False)
+        print(conf.hostname)
+        print(conf.username)
+        if conf.password:
+            print("Password is set")
         else:
-            hostname = conf.get('JSSHostname', prompt='JSS Hostname')
-        a = (args.user, args.passwd)
-        auth = a if all(a) else jamf.config.credentials_prompt(args.user)
-        conf.credentials(hostname, auth)
+            print("Password is not set")
+    else:
+        if args.path:
+            config_path = args.path
+        else:
+            config_path = self.default_pref
+
+        if args.hostname:
+            hostname = args.hostname
+        else:
+            hostname = jamf.config.prompt_hostname()
+
+        if args.user:
+            user = args.user
+        else:
+            user = input("username: ")
+
+        if args.passwd:
+            passwd = args.passwd
+        else:
+            passwd = getpass.getpass()
+
+        conf = jamf.config.Config(
+            config_path=config_path,
+            hostname=hostname,
+            username=user,
+            password=passwd,
+            prompt=False
+        )
         conf.save()
 
 
