@@ -24,9 +24,9 @@ class Parser:
     def __init__(self):
         myplatform = platform.system()
         if myplatform == "Darwin":
-            default_pref = jamf.config.MACOS_PREFS
+            default_pref = jamf.config.MACOS_PREFS_TILDA
         elif myplatform == "Linux":
-            default_pref = jamf.config.LINUX_PREFS
+            default_pref = jamf.config.LINUX_PREFS_TILDA
 
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument(
@@ -77,7 +77,7 @@ def main(argv):
         pprint.pprint(api.get('accounts'))
 
     elif args.print:
-        conf = jamf.config.Config(prompt=False)
+        conf = jamf.config.Config(prompt=False,explain=True)
         print(conf.hostname)
         print(conf.username)
         if conf.password:
