@@ -66,7 +66,7 @@ class Parser:
                                           description="list patch info")
         list.add_argument('-v', '--versions', action='store_true',
                           help='list SoftwareTitle versions and packages for NAME')
-        list.add_argument('-P', '--patch', action='store_true',
+        list.add_argument('-P', '--patches', action='store_true',
                           help='list patch policies current versions for SoftwareTitle NAME')
         list.add_argument('-p', '--pkgs', action='store_true',
                           help='list jss packages starting with NAME (or all if no NAME)')
@@ -333,8 +333,8 @@ def main(argv):
             if not args.name:
                 raise SystemExit("ERROR: must specify SoftwareTitle name")
             list_softwaretitle_versions(api, args.name)
-        elif args.patch:
-            # `patch.py list --patch NAME`
+        elif args.patches:
+            # `patch.py list --patches NAME`
             if not args.name:
                 raise SystemExit("ERROR: must specify SoftwareTitle name")
             list_softwaretitle_policy_versions(api, args.name)
