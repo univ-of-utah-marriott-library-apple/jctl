@@ -18,6 +18,7 @@ import logging
 import platform
 import pprint
 import sys
+from os import path
 
 class Parser:
 
@@ -90,6 +91,9 @@ def main(argv):
         else:
             config_path = self.default_pref
 
+        if config_path[0] == '~':
+            config_path = path.expanduser(config_path)
+
         if args.hostname:
             hostname = args.hostname
         else:
@@ -106,13 +110,12 @@ def main(argv):
             passwd = getpass.getpass()
 
         conf = jamf.config.Config(
-            config_path=config_path,
             hostname=hostname,
             username=user,
             password=passwd,
             prompt=False
         )
-        conf.save()
+        conf.save(config_path=config_path)
 
 
 if __name__ == '__main__':
