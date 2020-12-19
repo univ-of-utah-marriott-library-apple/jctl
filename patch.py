@@ -38,6 +38,7 @@ __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
 __version__ = "1.0.4"
+min_jamf_version = "0.4.7"
 
 
 import sys
@@ -116,7 +117,15 @@ class Parser:
         """
         return self.parser.parse_args(argv)
 
+def check_version():
+    jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
+    min_first, min_second, min_third = min_jamf_version.split(".")
 
+    if ( int(jamf_first) <= int(min_first) and
+         int(jamf_second) <= int(min_second) and
+         int(jamf_third) < int(min_third)):
+         print(f"Your Version is: {jamf.__version__}, you need at least version {min_jamf_version} to run")
+                
 def print_version_key_list(versions):
     """
     Prints formatted (justified) list of key/value tuple pairs
@@ -325,6 +334,8 @@ def main(argv):
     args = Parser().parse(argv)
     logger.debug(f"args: {args!r}")
 
+    check_version()
+    
     api = jamf.API()
 
     if args.cmd == 'list':
