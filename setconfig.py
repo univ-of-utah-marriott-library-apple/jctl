@@ -86,7 +86,6 @@ def main(argv):
     args = Parser().parse(argv)
     logger.debug(f"args: {args!r}")
 
-    check_version()
 
     if args.test:
         api = jamf.API()
@@ -134,6 +133,7 @@ def main(argv):
 
 
 if __name__ == '__main__':
+    check_version()
     fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
     logging.basicConfig(level=logging.INFO, format=fmt)
     main(sys.argv[1:])
