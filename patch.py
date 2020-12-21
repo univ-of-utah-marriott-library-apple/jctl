@@ -125,6 +125,7 @@ def check_version():
          int(jamf_second) <= int(min_second) and
          int(jamf_third) < int(min_third)):
          print(f"Your Version is: {jamf.__version__}, you need at least version {min_jamf_version} to run")
+         sys.exit()
                 
 def print_version_key_list(versions):
     """
