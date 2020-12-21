@@ -118,14 +118,20 @@ class Parser:
         return self.parser.parse_args(argv)
 
 def check_version():
-    jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
-    min_first, min_second, min_third = min_jamf_version.split(".")
 
-    if ( int(jamf_first) <= int(min_first) and
-         int(jamf_second) <= int(min_second) and
-         int(jamf_third) < int(min_third)):
-         print(f"Your Version is: {jamf.__version__}, you need at least version {min_jamf_version} to run")
-         sys.exit()
+    try:
+        jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
+        min_first, min_second, min_third = min_jamf_version.split(".")
+        
+        if ( int(jamf_first) <= int(min_first) and
+             int(jamf_second) <= int(min_second) and
+             int(jamf_third) < int(min_third)):
+             print(f"Your Version is: {jamf.__version__}, you need at least version {min_jamf_version} to run jctl.")
+             sys.exit()
+             
+    except AttributeError:
+             print(f"Your Version is below 0.4.2, you need at least version {min_jamf_version} to run jctl.")
+             sys.exit()
                 
 def print_version_key_list(versions):
     """
@@ -334,8 +340,6 @@ def main(argv):
     logger = logging.getLogger(__name__)
     args = Parser().parse(argv)
     logger.debug(f"args: {args!r}")
-
-    check_version()
     
     api = jamf.API()
 
@@ -404,6 +408,7 @@ def main(argv):
 
 
 if __name__ == '__main__':
+    check_version()
     fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
     logging.basicConfig(level=logging.INFO, format=fmt)
     main(sys.argv[1:])
