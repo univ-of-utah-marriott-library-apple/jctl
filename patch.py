@@ -48,9 +48,9 @@ import pathlib
 import argparse
 
 import jamf
-import jamf.admin
+#import jamf.admin
 from jamf.package import Package
-import jamf.config
+#import jamf.config
 
 
 class Parser:
@@ -384,7 +384,8 @@ def main(argv):
         #     info = pkg.info
         # except Exception:
         #     raise SystemExit(f"invalid package: {args.path!r}")
-        admin = jamf.Admin()
+        admin = jamf.admin.JamfAdmin()
+        #admin = jamf.Admin()
         try:
             uploaded = admin.add(pkg)
         except jamf.admin.DuplicatePackageError as e:
@@ -397,7 +398,7 @@ def main(argv):
         path = pathlib.Path(args.name)
         if path.name != str(path):
             raise SystemExit("must specify package name not path")
-        admin = jamf.Admin()
+        admin = jamf.JamfAdmin()
         try:
             pkg = admin.find(path.name)
         except jamf.admin.MissingPackageError:
