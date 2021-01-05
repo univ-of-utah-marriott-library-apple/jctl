@@ -73,6 +73,8 @@ class Parser:
                           help='list jss packages starting with NAME (or all if no NAME)')
         list.add_argument('name', metavar='NAME', action='store', nargs='?',
                           help='contextual name specification')
+        list.add_argument('-i', '--ids', action='store_true',
+                          help='list all Policies with IDs')
 
         # updating
         update = self.subparsers.add_parser('update', help='update patch',
@@ -186,6 +188,23 @@ def list_packages(api, name=None):
     # print sorted list of resulting Patch SoftwareTitle names
     for n in sorted(result):
         print(n)
+
+def list_policies_ids(api, name):
+    p = api.get('policies')
+    pls = p['policies']['policy']
+    ids = [x['id'] for x in pls]
+    id_name = [x['name'] for x in pls]
+    return(ids, id_name)
+
+def print_policies_ids(api, name):
+    (ids, id_name) = list_policies_ids(api, name)
+    for b in range(len(ids)):
+        #print(b)
+        print("ID: " + ids[b] + " Name: " + id_name[b])
+        
+def list_policy_scopes(api, name):
+    (ids, id_name) = list_policies_ids(api, name)
+    
 
 
 def list_softwaretitle_versions(api, name):
@@ -357,6 +376,9 @@ def main(argv):
         elif args.pkgs:
             # `patch.py list --pkgs`
             list_packages(api, args.name)
+        elif args.ids:
+            # `patch.py list --ids`
+            print_policies_ids(api, args.name)
         else:
             # `patch.py list`
             list_softwaretitles(api, args.name)
