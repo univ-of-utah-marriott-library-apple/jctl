@@ -75,6 +75,8 @@ class Parser:
                           help='contextual name specification')
         list.add_argument('-i', '--ids', action='store_true',
                           help='list all Policies with IDs')
+#         list.add_argument('-s', '--scope', action='store_true',
+#                           help='list all Scopes for Policies')
 
         # updating
         update = self.subparsers.add_parser('update', help='update patch',
@@ -124,17 +126,17 @@ def check_version():
     try:
         jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
         min_first, min_second, min_third = min_jamf_version.split(".")
-        
+
         if ( int(jamf_first) <= int(min_first) and
              int(jamf_second) <= int(min_second) and
              int(jamf_third) < int(min_third)):
              print(f"Your Version is: {jamf.__version__}, you need at least version {min_jamf_version} to run jctl.")
              sys.exit()
-             
+
     except AttributeError:
              print(f"Your Version is below 0.4.2, you need at least version {min_jamf_version} to run jctl.")
              sys.exit()
-                
+
 def print_version_key_list(versions):
     """
     Prints formatted (justified) list of key/value tuple pairs
@@ -201,10 +203,85 @@ def print_policies_ids(api, name):
     for b in range(len(ids)):
         #print(b)
         print("ID: " + ids[b] + " Name: " + id_name[b])
-        
-def list_policy_scopes(api, name):
-    (ids, id_name) = list_policies_ids(api, name)
-    
+
+# def list_policy_scopes(api, name):
+#     policies = api.getNamedIds('policies')
+# 
+# 
+#     (ids, id_name) = list_policies_ids(api, name)
+#     computers_scope = []
+# 
+#     for policy_name in policies:
+#         policy_id = policies[policy_name]
+#         print(f"ID: {policy_id} Name: {policy_name}")
+#         p = api.get(f"policies/id/{policy_id}")
+#         #print (p)
+#         for scope in p['policy']['scope']:
+#             print (scope)
+#             for key, value in scope:
+#                 print (key, '--', value)
+# 
+#                 computer_id = computer['id']
+#                 computer_name = computer['name']
+#                 print (computer_id, " : ", computer_name)
+#                 for id, computer_name in value.items():
+#                     print(id, ' : ', computers_name)
+#
+#
+#        # print (p['policy']['scope']['all_computers'])
+#
+#
+#
+#
+#
+#
+#         # Determine if the policy is scoped to all computers
+#         if p['policy']['scope']['all_computers'] == 'true':
+#             all_computers_scope = str(True)
+#             print (True)
+#         else:
+#             all_computers_scope = str(False)
+#         #print (all_computers_scope)
+#         #print("     All Computers Scope " + str(all_computers_scope))
+#         computers_scope = p['policy']['scope']['computers']
+#
+#         # Determine if the policy is individual computers
+#         #print (computers_scope)
+#         if computers_scope != None:
+#             computer = computers_scope['computer']
+#             print (computer)
+#             computer_id = computer['id']
+#             computer_name = computer['name']
+#             print (computer_id, " : ", computer_name)
+#             #for key, value in computer.items():
+#                 #print (key, '--', value)
+# #                 computer_id = computer['id']
+# #                 computer_name = computer['name']
+# #                 print (computer_id, " : ", computer_name)
+#                 # for id, computer_name in value.items():
+# #                     print(id, ' : ', computers_name)
+#         computer_group_scope = p['policy']['scope']['computer_groups']
+#         building_scope = p['policy']['scope']['buildings']
+#         departments_scope = p['policy']['scope']['departments']
+#         user_scope = p['policy']['scope']['limit_to_users']
+#         limitations = p['policy']['scope']['limitations']
+#         exclusions = p['policy']['scope']['exclusions']
+        #print (scope)
+
+#     for b in range(len(ids)):
+#         #print(b)
+#         print("ID: " + ids[b] + " Name: " + id_name[b])
+#         print("Policy Scope:")
+#         print("     All Computers Scope " + all_computers_scope[b])
+#         print (b, ' : ', computers_scope[b])
+#         #print("     Individual Computers:   " + computers_scope(b))
+#         print("     Computer Groups:    " + computer_group_scope[b])
+#         print("     ")
+#         print("     ")
+#         print("     ")
+#         print("     ")
+#         print("     ")
+
 
 
 def list_softwaretitle_versions(api, name):
@@ -359,7 +436,7 @@ def main(argv):
     logger = logging.getLogger(__name__)
     args = Parser().parse(argv)
     logger.debug(f"args: {args!r}")
-    
+
     api = jamf.API()
 
     if args.cmd == 'list':
@@ -379,6 +456,9 @@ def main(argv):
         elif args.ids:
             # `patch.py list --ids`
             print_policies_ids(api, args.name)
+#         elif args.scope:
+#             # `patch.py list --scope`
+#             list_policy_scopes(api, args.name)
         else:
             # `patch.py list`
             list_softwaretitles(api, args.name)
