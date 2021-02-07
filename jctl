@@ -16,8 +16,8 @@ __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
-__version__ = "1.0.5"
-min_jamf_version = "0.4.8"
+__version__ = "1.0.6"
+min_jamf_version = "0.4.9"
 
 
 from pprint import pprint
@@ -56,7 +56,10 @@ class Parser:
              description='Valid Jamf Records are: '+', '.join(valid_jamf_records))
         info.add_argument('record', metavar='RECORD',
             choices=valid_jamf_records, help='print jamf record info')
-        info.add_argument('name', metavar='NAME', help='print jamf record info')
+        info.add_argument('name', metavar='NAME', nargs='*',
+            help='print jamf record info')
+        info.add_argument('-p', '--path', action='append',
+            help='Print out path (e.g. \'-p general -p serial_number\'')
 
         # Package args
         info.add_argument('-f', '--file', action='store_true',
@@ -355,47 +358,58 @@ def main(argv):
     else:
         api = jamf.API()
 
+    if args.record:
+        jamf_record = jamf.records.class_name(args.record)
+
     ###########################################################################
     # Info
     if args.arg1 == 'info':
-        if args.file:
-            if args.record == "Packages":
-                # `patch.py info FILE`
-                pprint(Package(args.name).apps)
-            else:
-                print("-f only works for Packages")
-                exit(1)
+        for name in args.name:
+            if args.file:
+                if args.record == "Packages":
+                    # `patch.py info FILE`
+                    pprint(Package(name).apps)
+                else:
+                    print("-f only works for Packages")
+                    exit(1)
 
-        elif args.patches:
-            if args.record == "PatchSoftwareTitles":
-                # `patch.py list --patches NAME`
-                list_softwaretitle_policy_versions(api, args.name)
-            else:
-                print("-P only works for PatchSoftwareTitles")
-                exit(1)
+            elif args.patches:
+                if args.record == "PatchSoftwareTitles":
+                    # `patch.py list --patches NAME`
+                    list_softwaretitle_policy_versions(api, name)
+                else:
+                    print("-P only works for PatchSoftwareTitles")
+                    exit(1)
 
-        elif args.versions:
-            if args.record == "PatchSoftwareTitles":
-                # `patch.py list --versions NAME`
-                list_softwaretitle_versions(api, args.name)
-            else:
-                print("-v only works for PatchSoftwareTitles")
-                exit(1)
-
-        else:
-            if args.record in ["PatchSoftwareTitles"]:
-                # Workaround (PatchSoftwareTitles doesn't have name search)
-                id = jamf.records.class_name(args.record)().id(args.name)
-                jamf.records.class_name(args.record)(id).print()
+            elif args.versions:
+                if args.record == "PatchSoftwareTitles":
+                    # `patch.py list --versions NAME`
+                    list_softwaretitle_versions(api, name)
+                else:
+                    print("-v only works for PatchSoftwareTitles")
+                    exit(1)
 
             else:
-                # EVERYTHING ELSE
-                jamf.records.class_name(args.record)(args.name).print()
+                if args.record in ["PatchSoftwareTitles"]:
+                    # Workaround (PatchSoftwareTitles doesn't have name search)
+                    # This might need to be made generic in records.py
+                    id = jamf_record().id(name)
+                    if args.path:
+                        print(jamf_record(id).path(args.path))
+                    else:
+                        jamf_record(id).print()
+
+                else:
+                    # EVERYTHING ELSE
+                    if args.path:
+                        print(jamf_record(name).path(args.path))
+                    else:
+                        jamf_record(name).print()
 
     ###########################################################################
     # List
     elif args.arg1 == 'list':
-        jamf.records.class_name(args.record)().list(args.name)
+        jamf_record().list(args.name)
 
     ###########################################################################
     # New
