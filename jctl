@@ -16,8 +16,8 @@ __author__ = 'Sam Forester'
 __email__ = 'sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
-__version__ = "1.0.6"
-min_jamf_version = "0.4.9"
+__version__ = "1.0.7"
+min_jamf_version = "0.5.0"
 
 
 from pprint import pprint
@@ -52,75 +52,86 @@ class Parser:
         #######################################################################
         # Info
 
-        info = self.subparsers.add_parser('info', help='list',
-             description='Valid Jamf Records are: '+', '.join(valid_jamf_records))
-        info.add_argument('record', metavar='RECORD',
+        info_ = self.subparsers.add_parser('info', help='list',
+             description='Valid Jamf Records are: '+
+                         ', '.join(valid_jamf_records))
+        info_.add_argument('record', metavar='RECORD',
             choices=valid_jamf_records, help='print jamf record info')
-        info.add_argument('name', metavar='NAME', nargs='*',
+        info_.add_argument('name', metavar='NAME', nargs='*',
             help='print jamf record info')
-        info.add_argument('-p', '--path', action='append',
+        info_.add_argument('-j', '--json', action='store_true',
+            help='Print json')
+        info_.add_argument('-p', '--path', action='append',
             help='Print out path (e.g. \'-p general -p serial_number\'')
 
         # Package args
-        info.add_argument('-f', '--file', action='store_true',
-            help='path to pkg file (only works with Packages, was `patch.py info FILE`)')
+        info_.add_argument('-f', '--file', action='store_true',
+            help='path to pkg file (only works with Packages, was `patch.py'
+                 'info FILE`)')
 
         # Patch args
-        info.add_argument('-P', '--patches', action='store_true',
+        info_.add_argument('-P', '--patches', action='store_true',
             help='list patch policies current versions for '
                  'SoftwareTitle NAME')
-        info.add_argument('-v', '--versions', action='store_true',
+        info_.add_argument('-v', '--versions', action='store_true',
             help='info SoftwareTitle versions and packages for NAME'
                  ' (was `patch.py list --versions NAME`)')
 
         #######################################################################
         # List
 
-        list = self.subparsers.add_parser('list', help='list',
+        list_ = self.subparsers.add_parser('list', help='list',
              description='Valid Jamf Records are: '+', '.join(valid_jamf_records))
-        list.add_argument('record', metavar='RECORD',
+        list_.add_argument('record', metavar='RECORD',
             choices=valid_jamf_records, help='list jamf records')
-        list.add_argument('name', metavar='REGEX', action='store', nargs='?',
+        list_.add_argument('name', metavar='REGEX', action='store', nargs='?',
             help='list jamf records with names that match REGEX')
+        list_.add_argument('-p', '--path', action='append',
+            help='Print out path (e.g. \'-p general -p serial_number\' Note:'
+                 'Using this forces jctl to load each record, slowing it down')
 
         #######################################################################
         # New
 
-        neu = self.subparsers.add_parser('new', help='new',
-             description='Valid Jamf Records are: '+', '.join(valid_jamf_records))
-        neu.add_argument('record', metavar='RECORD',
+        new_ = self.subparsers.add_parser('new', help='new',
+             description='Adds record. Valid Jamf Records are: '+
+                         ', '.join(valid_jamf_records))
+        new_.add_argument('record', metavar='RECORD',
             choices=valid_jamf_records, help='new jamf record')
-        neu.add_argument('name', metavar='NAME',
-            help='new jamf records')
+        new_.add_argument('data', metavar='DATA', action='store', nargs='?',
+            help='Data to add. - will read from STDIN')
+        new_.add_argument('-f', '--file', help='path to json file')
 
         #######################################################################
-        # Remove
+        # Delete
 
-        remove = self.subparsers.add_parser('remove', help='remove',
+        delete_ = self.subparsers.add_parser('delete', help='delete',
              description='Valid Jamf Records are: '+', '.join(valid_jamf_records))
-        remove.add_argument('record', metavar='RECORD',
-            choices=valid_jamf_records, help='remove jamf record')
-        remove.add_argument('name', metavar='REGEX', action='store', nargs='?',
-            help='remove jamf records with names that match REGEX')
+        delete_.add_argument('record', metavar='RECORD',
+            choices=valid_jamf_records, help='delete jamf record')
+        delete_.add_argument('name', metavar='REGEX', action='store', nargs='?',
+            help='delete jamf records with names that match REGEX')
+        delete_.add_argument('-f', '--force', action='store_true',
+            help="Don't ask to delete. DANGER! This can delete everything!")
 
         #######################################################################
         # Update
 
-        update = self.subparsers.add_parser('update', help='update',
+        update_ = self.subparsers.add_parser('update', help='update',
              description='Valid Jamf Records are: '+', '.join(valid_jamf_records))
-        update.add_argument('record', metavar='RECORD',
+        update_.add_argument('record', metavar='RECORD',
             choices=valid_jamf_records, help='update jamf record')
-        update.add_argument('name', metavar='REGEX', action='store', nargs='?',
+        update_.add_argument('name', metavar='REGEX', action='store', nargs='?',
             help='update jamf record')
 
         #######################################################################
         # Upload
 
-        upload = self.subparsers.add_parser('upload', help='upload',
+        upload_ = self.subparsers.add_parser('upload', help='upload',
              description='Valid Jamf Records are: '+', '.join(valid_jamf_records))
-        upload.add_argument('record', metavar='RECORD',
+        upload_.add_argument('record', metavar='RECORD',
             choices=['Packages'], help='upload jamf record')
-        upload.add_argument('name', metavar='REGEX', action='store', nargs='?',
+        upload_.add_argument('name', metavar='REGEX', action='store', nargs='?',
             help='upload jamf record')
 
     def parse(self, argv):
@@ -337,6 +348,25 @@ def softwaretitle_policies(api, jssid):
 
 ###############################################################################
 
+def print_path(results):
+    if results and len(results) > 0:
+        for result in results:
+            if isinstance(result, str):
+                print(result+"\t")
+            else:
+                print(result)
+    print()
+
+def confirm(_message):
+    """
+    Ask user to enter Y or N (case-insensitive).
+    :return: True if the answer is Y.
+    :rtype: bool
+    """
+    answer = ""
+    while answer not in ["y", "n"]:
+        answer = input(_message).lower()
+    return answer == "y"
 
 def main(argv):
     logger = logging.getLogger(__name__)
@@ -359,16 +389,16 @@ def main(argv):
         api = jamf.API()
 
     if args.record:
-        jamf_record = jamf.records.class_name(args.record)
+        jamf_record_class = jamf.records.class_name(args.record)
 
     ###########################################################################
     # Info
     if args.arg1 == 'info':
-        for name in args.name:
+        for name_ in args.name:
             if args.file:
                 if args.record == "Packages":
                     # `patch.py info FILE`
-                    pprint(Package(name).apps)
+                    pprint(Package(name_).apps)
                 else:
                     print("-f only works for Packages")
                     exit(1)
@@ -376,7 +406,7 @@ def main(argv):
             elif args.patches:
                 if args.record == "PatchSoftwareTitles":
                     # `patch.py list --patches NAME`
-                    list_softwaretitle_policy_versions(api, name)
+                    list_softwaretitle_policy_versions(api, name_)
                 else:
                     print("-P only works for PatchSoftwareTitles")
                     exit(1)
@@ -384,42 +414,59 @@ def main(argv):
             elif args.versions:
                 if args.record == "PatchSoftwareTitles":
                     # `patch.py list --versions NAME`
-                    list_softwaretitle_versions(api, name)
+                    list_softwaretitle_versions(api, name_)
                 else:
                     print("-v only works for PatchSoftwareTitles")
                     exit(1)
 
             else:
-                if args.record in ["PatchSoftwareTitles"]:
-                    # Workaround (PatchSoftwareTitles doesn't have name search)
-                    # This might need to be made generic in records.py
-                    id = jamf_record().id(name)
-                    if args.path:
-                        print(jamf_record(id).path(args.path))
-                    else:
-                        jamf_record(id).print()
-
+                if args.path:
+                    print_path(jamf_record_class(name_).path(args.path))
                 else:
-                    # EVERYTHING ELSE
-                    if args.path:
-                        print(jamf_record(name).path(args.path))
+                    if args.json:
+                        print(jamf_record_class(name_).json())
                     else:
-                        jamf_record(name).print()
+                        jamf_record_class(name_).print()
 
     ###########################################################################
     # List
     elif args.arg1 == 'list':
-        jamf_record().list(args.name)
+        results = jamf_record_class().list(args.name)
+        if results:
+            for name_ in results:
+                if args.path:
+                    print_path(jamf_record_class(name_).path(args.path))
+                else:
+                    print(name_)
 
     ###########################################################################
     # New
     elif args.arg1 == 'new':
-        print("new")
+        if args.data:
+            if args.data == "-":
+                jamf_record_class(json_data=sys.stdin)
+            elif args.data != "":
+                jamf_record_class(python_data=args.data)
+        elif args.file:
+            jamf_record_class(json_file=args.file)
+        else:
+            timmy.parser.print_help()
+            print("\nSpecify data to add or - to read from STDIN")
+            exit(1)
 
     ###########################################################################
-    # Remove
-    elif args.arg1 == 'remove':
-        print("remove")
+    # Delete
+    elif args.arg1 == 'delete':
+        results = jamf_record_class().list(args.name, ids=True)
+        if results:
+            for name_ in results:
+                pprint(name_)
+                if args.force:
+                    doit = True
+                else:
+                    doit = confirm("Are you sure you want to delete this record [Y/N]? ")
+                if doit:
+                    jamf_record_class(name_).delete()
 
 # Package
 #             path = pathlib.Path(args.name)
@@ -429,7 +476,7 @@ def main(argv):
 #             try:
 #                 pkg = admin.find(path.name)
 #             except jamf.admin.MissingPackageError:
-#                 logger.error(f"package already removed: {path.name}")
+#                 logger.error(f"package already deleted: {path.name}")
 #             else:
 #                 admin.delete(pkg)
     ###########################################################################
@@ -471,8 +518,13 @@ def main(argv):
 #                 uploaded = admin.find(pkg.name)
 #             admin.update(uploaded, notes=package_notes(uploaded.path))
 
+    else:
+        timmy.parser.print_help()
 
 if __name__ == '__main__':
     fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
     logging.basicConfig(level=logging.INFO, format=fmt)
-    main(sys.argv[1:])
+    try:
+        main(sys.argv[1:])
+    except KeyboardInterrupt:
+            sys.exit(1)
