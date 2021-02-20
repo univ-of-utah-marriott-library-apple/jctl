@@ -312,7 +312,7 @@ def main(argv):
     if args.record:
         jamf_record_class = jamf.records.class_name(args.record, case_sensitive=False)
     results = []
-    if args.regex or args.name or args.ids:
+    if args.regex or args.name or args.id:
         if args.regex:
             results = results+jamf_record_class().list(regexes=args.regex, returnIds=True)
         if args.name:
