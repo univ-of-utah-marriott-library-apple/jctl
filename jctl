@@ -28,6 +28,7 @@ import logging
 import pathlib
 import re
 import sys
+import time
 
 #import jamf.admin
 from jamf.package import Package
@@ -52,29 +53,50 @@ class Parser:
         self.parser.add_argument('-i', '--id', nargs='*',
             help='Search for id matches')
         self.parser.add_argument('-s', '--searchpath', action='append',
-            help='Search for a path (e.g. \'-p general,id=152\'')
+            help='Search for a path (e.g. \'-p general,id==152\'')
         # Print options
         self.parser.add_argument('-l', '--long', action='store_true',
             help='List long format')
         self.parser.add_argument('-j', '--json', action='store_true',
-            help='Print json')
+            help='Print json (for pretty pipe to `prettier --parser json`)')
         self.parser.add_argument('--quiet-as-a-mouse', action='store_true',
             help='Don\'t print anything')
         # Path
         self.parser.add_argument('-p', '--path', action='append',
             help='Print out path (e.g. \'-p general -p serial_number\')')
         # Actions
-        self.parser.add_argument('-d', '--rm', action='store_true',
+        self.parser.add_argument('-d', '--delete', action='store_true',
             help='Delete jamf record')
         self.parser.add_argument('--use-the-force-luke', action='store_true',
             help="Don't ask to delete. DANGER! This can delete everything!")
+        self.parser.add_argument('--andele-andele', action='store_true',
+            help="Don't pause 3 seconds when updating or deleting without "
+                 "confirmation. DANGER! This can delete everything FAST!")
+        self.parser.add_argument('-u', '--update', action='append',
+            help='Update jamf record (e.g. \'-u general={} -u name=123\')')
 
     def parse(self, argv):
         """
         :param argv:    list of arguments to parse
         :returns:       argparse.NameSpace object
         """
-        return self.parser.parse_args(argv)
+        args = self.parser.parse_args(argv)
+        if args.delete and args.update:
+            print("Cannot delete and update at the same time.")
+            _exit()
+        if args.quiet_as_a_mouse:
+            if args.json:
+                print("Can't print json if quiet...")
+                _exit()
+            if args.long:
+                print("Can't print long if quiet...")
+                _exit()
+            if (args.delete or args.update) and not args.use_the_force_luke:
+                print("If you want to update/delete records without "
+                      "confirmation you must also specify "
+                      "--use-the-force-luke.")
+                _exit()
+        return args
 
 def check_version():
 
@@ -87,12 +109,12 @@ def check_version():
              int(jamf_third) < int(min_third)):
              print(f"Your Version is: {jamf.__version__}, you need at least "
                    f"version {min_jamf_version} to run this version of jctl.")
-             sys.exit()
+             _exit()
 
     except AttributeError:
              print(f"Your Version is below 0.4.2, you need at least version "
                    f"{min_jamf_version} to run this version of jctl.")
-             sys.exit()
+             _exit()
 
 
 ###############################################################################
@@ -303,14 +325,15 @@ def main(argv):
     if args.version:
         print("jctl "+__version__)
         print("python_jamf "+jamf.__version__+ " ("+min_jamf_version+" required)")
-        exit()
+        _exit()
     check_version()
     if args.config:
         api = jamf.API(config_path=args.config)
     else:
         api = jamf.API()
-    if not args.quiet_as_a_mouse and args.rm:
-        print(api.url)
+    if not args.quiet_as_a_mouse and (args.delete or args.update):
+        print("Server: "+api.url)
+
     # Get the records
     jamf_record_class = jamf.records.class_name(args.record, case_sensitive=False)
     results = []
@@ -323,58 +346,146 @@ def main(argv):
             results = results+jamf_record_class().list(ids=args.id, returnIds=True)
     else:
         results = jamf_record_class().list(returnIds=True)
-    if not results:
-        exit()
-    results = sorted(results)
+    if results:
+        results = sorted(results)
 
-    # Do something with records
+    # Get long info, filter results, print feedback
+    results2 = []
+    if args.json and not args.quiet_as_a_mouse:
+        json_output = "["
     for data_ in results:
-        if args.long or args.searchpath or args.path:
-            long_data = jamf_record_class(data_[1])
 
-        filtered = False
+        # Get all the info this request needs
+        record_name = data_[0]
+        record_id = data_[1]
+        if args.long or args.searchpath or args.path or args.update:
+            long_data = jamf_record_class(record_id)
+            data_.append(long_data)
+
+        # Check to see if it's filtered
+        keep_going = True
         if args.searchpath:
             for searchpath in args.searchpath:
-                m = re.match("(.*)=(.*)", searchpath)
-                if (not filtered and m):
-                    path_data = long_data.path(m[1])
+                searchpath2 = re.match("(.*)==(.*)", searchpath)
+                if (keep_going and searchpath2):
+                    path_data = long_data.get_path(searchpath2[1])
                     if isinstance(path_data, str):
-                        if path_data != m[2]:
-                            filtered = True
+                        if path_data != searchpath2[2]:
+                            keep_going = False
+                            continue
                     else:
-                        print(f"Can't find {m[2]} in {m[1]} because it is:")
-                        pprint(path_data)
-                        exit()
-        if filtered:
-            continue
+                        keep_going = False
+                        continue
+                else:
+                    keep_going = False
+                    continue
 
-        # Print feedback
+        if keep_going:
+            results2.append(data_)
+
+            # Print feedback
+            if not args.quiet_as_a_mouse:
+
+                if args.json:
+                    print(json_output)
+                    json_output = "  ["
+                if args.path:
+                    if args.json:
+                        for path_ in args.path:
+                            json_output += json.dumps(long_data.get_path(path_))+","
+                        json_output = json_output[:-1] # Remove the last comma
+                    else:
+                        for path_ in args.path:
+                            pprint(long_data.get_path(path_))
+                elif args.long:
+                    if args.json:
+                        json_output += json.dumps(long_data.data())+","
+                    else:
+                        pprint(long_data.data())
+                else:
+                    if args.json:
+                        json_output += json.dumps(record_name)
+                    else:
+                        print(record_name)
+
+                if args.json:
+                    json_output += "],"
+
+    results = results2
+    if args.json and not args.quiet_as_a_mouse:
+        json_output = json_output[:-1] # Remove the last comma
+        print(json_output)
+        print("]")
+
+    # Actions
+    if args.delete or args.update:
+
+        # Confirm if making changes
+        type_of_change = ""
+        if args.delete:
+            type_of_change = "delete"
+        elif args.update:
+            type_of_change = "update"
+        doit = args.use_the_force_luke
         if args.quiet_as_a_mouse:
-            pass
-        elif args.path:
-            if args.json:
-                for path_ in args.path:
-                    print(json.dumps(long_data.path(path_)))
-            else:
-                for path_ in args.path:
-                    pprint(long_data.path(path_))
-        elif args.long:
-            if args.json:
-                print(json.dumps(long_data))
-            else:
-                pprint(long_data.data())
+            if doit and not args.andele_andele:
+                time.sleep(3)
         else:
-            print(data_[0])
-
-        # Actions
-        if args.rm:
-            if args.use_the_force_luke:
-                doit = True
-            else:
-                doit = confirm("Are you sure you want to delete this record [y/n]? ")
             if doit:
-                print("Deleting record")
-                jamf_record_class(data_[0]).delete()
+                print(f"Performing {type_of_change} without confirmation.")
+                if not args.andele_andele:
+                    print("Waiting 3 seconds.")
+                    time.sleep(3)
+            else:
+                doit = confirm(f"Are you sure you want to {type_of_change} "
+                               f"{len(results)} record(s) [y/n]? ")
+
+        # For each record
+        if doit:
+            for data_ in results:
+                #record_name = data_[0]
+                record_id = data_[1]
+
+                # Delete
+                if args.delete:
+                    if not args.quiet_as_a_mouse:
+                        print("Deleting record")
+                    jamf_record_class(record_id).delete()
+
+                # Update
+                elif args.update:
+                    long_data = data_[2] # long_data is prefetched for update
+                    success = True
+                    paths = []
+
+                    for update_ in args.update:
+                            update2_ = re.match("(.*)=(.*)", update_)
+                            if update2_:
+                                path_ = update2_[1]
+                                paths.append(path_)
+                                value_ = update2_[2]
+                                if not args.quiet_as_a_mouse:
+                                    old = long_data.get_path(path_)
+                                    if not args.quiet_as_a_mouse:
+                                        print(f"Old value: {path_} = {old}")
+
+                                success = long_data.set_path(path_, value_)
+
+                            else:
+                                if not args.quiet_as_a_mouse:
+                                    print(f"Couldn't find {update_}")
+                                success = False
+
+                    if success:
+                        long_data.put()
+
+                        # Fetch updated record
+                        if not args.quiet_as_a_mouse:
+                            new_data = jamf_record_class(record_id)
+                            if new_data:
+                                for path_ in paths:
+                                    new_ = new_data.get_path(path_)
+                                    print(f"New value: {path_} = {new_}")
 
 
 if __name__ == '__main__':
@@ -383,4 +494,4 @@ if __name__ == '__main__':
     try:
         main(sys.argv[1:])
     except KeyboardInterrupt:
-            sys.exit(1)
+            _exit(1)
