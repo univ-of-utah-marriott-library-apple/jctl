@@ -12,12 +12,12 @@ $> pctl policy list
 """
 
 
-__author__ = 'Sam Forester'
-__email__ = 'sam.forester@utah.edu'
-__copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
+__author__ = 'James Reynolds, Sam Forester'
+__email__ = 'reynolds@biology.utah.edu, sam.forester@utah.edu'
+__copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences'
 __license__ = 'MIT'
-__version__ = "1.0.8"
-min_jamf_version = "0.5.4"
+__version__ = "1.1.0"
+min_jamf_version = "0.6.0"
 
 
 from pprint import pprint
@@ -31,7 +31,7 @@ import sys
 import time
 
 #import jamf.admin
-from jamf.package import Package
+#from jamf.package import Package
 #import jamf.config
 
 
@@ -40,20 +40,20 @@ class Parser:
         valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
         self.parser = argparse.ArgumentParser()
         # https://docs.python.org/3/library/argparse.html
-        self.parser.add_argument('-c', '--config', help='path to config file')
+        self.parser.add_argument('-C', '--config', help='path to config file')
         self.parser.add_argument('-v', '--version', action='store_true',
             help='print version and exit')
         self.parser.add_argument('record', metavar='RECORD',
             choices=valid_jamf_records, help='Valid Jamf Records are: '+
             ', '.join(valid_jamf_records))
-        self.parser.add_argument('-n', '--name', nargs='*',
+        self.parser.add_argument('-x', '--exact', nargs='*',
             help='Search for exact name matches')
         self.parser.add_argument('-r', '--regex', nargs='*',
             help='Search for regular expression matches')
         self.parser.add_argument('-i', '--id', nargs='*',
             help='Search for id matches')
-        self.parser.add_argument('-s', '--searchpath', action='append',
-            help='Search for a path (e.g. \'-p general,id==152\'')
+#         self.parser.add_argument('-s', '--searchpath', action='append',
+#             help='Search for a path (e.g. \'-p general,id==152\'')
         # Print options
         self.parser.add_argument('-l', '--long', action='store_true',
             help='List long format')
@@ -62,18 +62,19 @@ class Parser:
         self.parser.add_argument('--quiet-as-a-mouse', action='store_true',
             help='Don\'t print anything')
         # Path
-        self.parser.add_argument('-p', '--path', action='append',
-            help='Print out path (e.g. \'-p general -p serial_number\')')
+#         self.parser.add_argument('-p', '--path', action='append',
+#             help='Print out path (e.g. \'-p general -p serial_number\')')
+
         # Actions
-        self.parser.add_argument('-d', '--delete', action='store_true',
-            help='Delete jamf record')
-        self.parser.add_argument('--use-the-force-luke', action='store_true',
-            help="Don't ask to delete. DANGER! This can delete everything!")
-        self.parser.add_argument('--andele-andele', action='store_true',
-            help="Don't pause 3 seconds when updating or deleting without "
-                 "confirmation. DANGER! This can delete everything FAST!")
-        self.parser.add_argument('-u', '--update', action='append',
-            help='Update jamf record (e.g. \'-u general={} -u name=123\')')
+#         self.parser.add_argument('-d', '--delete', action='store_true',
+#             help='Delete jamf record')
+#         self.parser.add_argument('--use-the-force-luke', action='store_true',
+#             help="Don't ask to delete. DANGER! This can delete everything!")
+#         self.parser.add_argument('--andele-andele', action='store_true',
+#             help="Don't pause 3 seconds when updating or deleting without "
+#                  "confirmation. DANGER! This can delete everything FAST!")
+#         self.parser.add_argument('-u', '--update', action='append',
+#             help='Update jamf record (e.g. \'-u general={} -u name=123\')')
 
     def parse(self, argv):
         """
@@ -81,9 +82,6 @@ class Parser:
         :returns:       argparse.NameSpace object
         """
         args = self.parser.parse_args(argv)
-        if args.delete and args.update:
-            print("Cannot delete and update at the same time.")
-            _exit()
         if args.quiet_as_a_mouse:
             if args.json:
                 print("Can't print json if quiet...")
@@ -91,15 +89,10 @@ class Parser:
             if args.long:
                 print("Can't print long if quiet...")
                 _exit()
-            if (args.delete or args.update) and not args.use_the_force_luke:
-                print("If you want to update/delete records without "
-                      "confirmation you must also specify "
-                      "--use-the-force-luke.")
-                _exit()
         return args
 
-def check_version():
 
+def check_version():
     try:
         jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
         min_first, min_second, min_third = min_jamf_version.split(".")
@@ -116,194 +109,6 @@ def check_version():
                    f"{min_jamf_version} to run this version of jctl.")
              _exit()
 
-
-###############################################################################
-
-###############################################################################
-# Package
-###############################################################################
-
-# def package_notes(path):
-#     path = pathlib.Path(path)
-#     *name, ver, date, author = path.stem.split('_')
-#     return f"{date}, {author.upper()}"
-
-###############################################################################
-# Patch
-###############################################################################
-
-def list_softwaretitles(api, name=None):
-    p = api.get('patchsoftwaretitles')
-    titles = p['patch_software_titles']['patch_software_title']
-    if name:
-        # only names that start with name (case-sensitive)
-        result = [x['name'] for x in titles if x['name'].startswith(name)]
-    else:
-        # all names
-        result = [x['name'] for x in titles]
-    # print sorted list of resulting Patch SoftwareTitle names
-    for n in sorted(result):
-        print(n)
-
-def list_softwaretitle_versions(api, name):
-    title = find_softwaretitle(api, name)['patch_software_title']
-    versions = []
-    # get each version and assoiciated package (if one)
-    for version in title['versions']['version']:
-        v = version['software_version']
-        # {name of pkg} or '-'
-        p = version['package']['name'] if version['package'] else '-'
-        versions.append((v, p))
-    # print formatted result
-    print_version_key_list(versions)
-
-def find_softwaretitle(api, name, details=True):
-    """
-    :param api:         jamf.api.API object
-    :param name:        softwaretitle name
-    :param details:     if False, return simple (id + name) (default: True)
-
-    :returns:           patch softwaretitle information
-    """
-    logger = logging.getLogger(__name__)
-    logger.debug(f"looking for existing software title: {name}")
-    # Iterate all Patch Management Titles for specified matching name
-    data = api.get('patchsoftwaretitles')['patch_software_titles']
-    for title in data['patch_software_title']:
-        if title['name'] == name:
-            logger.debug(f"found title: {name!r}")
-            if details:
-                logger.debug("returning detailed title info")
-                jssid = title['id']
-                return api.get(f"patchsoftwaretitles/id/{jssid}")
-            else:
-                logger.debug("returning simple title info")
-                return title
-    raise ValueError(f"missing software title: {name!r}")
-
-def print_version_key_list(versions):
-    """
-    Prints formatted (justified) list of key/value tuple pairs
-
-    e.g.  [('1.0', 'justified text'),
-           ('1.0.0', '-'),
-           ('2.0', ''),
-           ('2.0.0.2.a', 'longest version key')]
-    would print:
-    '''
-      1.0:        justified text
-      1.0.0:      -
-      2.0:
-      2.0.0.2.a:  longest version key
-    '''
-
-    :param versions <list>:  list of tuple key/value pairs
-                              e.g. [('1.O', 'info'), ('1.0.0', 'more'), ...]
-    """
-    # get length of the longest key
-    longest = sorted([len(k) for k, v in versions])[-1]
-    for ver, value in versions:
-        # dynamic right-justification of value based on longest version key
-        justification = (longest - len(ver)) + len(value)
-        print(f"  {ver}:  {value:>{justification}}")
-
-def list_softwaretitle_policy_versions(api, name):
-    jssid = find_softwaretitle(api, name, details=False)['id']
-    versions = []
-    for patch in softwaretitle_policies(api, jssid):
-        p = api.get(f"patchpolicies/id/{patch['id']}")
-        version = p['patch_policy']['general']['target_version']
-        versions.append((version, patch['name']))
-    # print formatted result
-    print_version_key_list(versions)
-
-def softwaretitle_policies(api, jssid):
-    """
-    :returns: list of software title patch policies
-    """
-    endpoint = f"patchpolicies/softwaretitleconfig/id/{jssid}"
-    return api.get(endpoint)['patch_policies']['patch_policy']
-
-# def update_softwaretitle_versions(api, name, versions, pkgs=None):
-#     """
-#     Update all
-#     :param api:      JSS API object
-#     :param name:     external patch definition name
-#     :param versions: {'Tech': version, 'Guinea Pig': version, 'Stable': version}
-#     :returns:
-#     """
-#     logger = logging.getLogger(__name__)
-#     jssid = find_softwaretitle(api, name, details=False)['id']
-#
-#     if pkgs:
-#         update_softwaretitle_packages(api, jssid, pkgs)
-#
-#     for p in softwaretitle_policies(api, jssid):
-#         # 'Tech - Test Boxes - Keynote' -> 'Tech'
-#         # 'Guinea Pig - Lab - Xcode' -> 'Guinea Pig'
-#         branch = p['name'].split(' - ')[0]
-#         try:
-#             update_patch_policy_version(api, p['id'], versions[branch])
-#         except KeyError:
-#             logger.debug(f"skipping: {p['name']!r}")
-#
-# def update_patch_policy_version(api, jssid, version):
-#     """
-#     Update Patch Policy version
-#     """
-#     logger = logging.getLogger(__name__)
-#     current = api.get(f"patchpolicies/id/{jssid}")
-#     current_version = current['patch_policy']['general']['target_version']
-#     name = current['patch_policy']['general']['name']
-#
-#     if current_version != version:
-#         logger.info(f"updating: {name!r}: {version}")
-#         data = {'patch_policy': {'general': {'target_version': version}}}
-#         api.put(f"patchpolicies/id/{jssid}", data)
-#     else:
-#         logger.debug(f"already updated: {name}: {version}")
-#
-# def update_softwaretitle_packages(api, jssid, pkgs):
-#     """
-#     Update packages of software title
-#     :param jssid:        Patch Software Title ID
-#     :param pkgs:         dict of {version: package, ...}
-#     :returns: None
-#     """
-#     logger = logging.getLogger(__name__)
-#
-#     data = api.get(f"patchsoftwaretitles/id/{jssid}")
-#     title = data['patch_software_title']
-#
-#     title_name = title['name']
-#     logger.info(f"updating patch software title: {title_name} ({jssid})")
-#
-#     # single version (dict), multiple versions (list)
-#     version = title['versions']['version']
-#     _modified = False
-#     try:
-#         # access key of single version and count on TypeError being raised
-#         v = version['software_version']
-#         if v in pkgs.keys():
-#             version['package'] = {'name': pkgs[v]}
-#             _modified = True
-#
-#     except TypeError:
-#         # looks like it was actually a list
-#         for _version in version:
-#             v = _version['software_version']
-#             if v in pkgs.keys():
-#                 _version['package'] = {'name': pkgs[v]}
-#                 _modified = True
-#
-#     if _modified:
-#         result = api.put(f"patchsoftwaretitles/id/{jssid}", data)
-#         logger.info(f"succesfully updated: {title_name}")
-#         return result
-#     else:
-#         logger.info(f"software title was not modified")
-
-###############################################################################
 
 def confirm(_message):
     """
@@ -331,161 +136,71 @@ def main(argv):
         api = jamf.API(config_path=args.config)
     else:
         api = jamf.API()
-    if not args.quiet_as_a_mouse and (args.delete or args.update):
-        print("Server: "+api.url)
 
-    # Get the records
-    jamf_record_class = jamf.records.class_name(args.record, case_sensitive=False)
+    # Get the main class
+    records = jamf.records.class_name(args.record, case_sensitive=False)()
+
+    # Filter records
     results = []
-    if args.regex or args.name or args.id:
+    if args.regex or args.exact or args.id:
+        temps = []
         if args.regex:
-            results = results+jamf_record_class().list(regexes=args.regex, returnIds=True)
-        if args.name:
-            results = results+jamf_record_class().list(exactMatches=args.name, returnIds=True)
+            for regex in args.regex:
+                temps = temps + [records.recordsWithRegex(regex)]
+        if args.exact:
+            for name in args.exact:
+                temps = temps + [records.recordWithName(name)]
         if args.id:
-            results = results+jamf_record_class().list(ids=args.id, returnIds=True)
+            for id in args.id:
+                try:
+                    id = int(id)
+                except ValueError:
+                    print(f"ID must be a number: {id}")
+                    exit(1)
+                temps = temps + [records.recordWithId(id)]
+
+        # Filter
+        for temp in temps:
+            if temp:
+                results = results + [temp]
+
     else:
-        results = jamf_record_class().list(returnIds=True)
+        results = records
+
     if results:
         results = sorted(results)
 
-    # Get long info, filter results, print feedback
-    results2 = []
+    # Print feedback
     if args.json and not args.quiet_as_a_mouse:
         json_output = "["
-    for data_ in results:
-
-        # Get all the info this request needs
-        record_name = data_[0]
-        record_id = data_[1]
-        if args.long or args.searchpath or args.path or args.update:
-            long_data = jamf_record_class(record_id)
-            data_.append(long_data)
-
-        # Check to see if it's filtered
-        keep_going = True
-        if args.searchpath:
-            for searchpath in args.searchpath:
-                searchpath2 = re.match("(.*)==(.*)", searchpath)
-                if (keep_going and searchpath2):
-                    path_data = long_data.get_path(searchpath2[1])
-                    if isinstance(path_data, str):
-                        if path_data != searchpath2[2]:
-                            keep_going = False
-                            continue
-                    else:
-                        keep_going = False
-                        continue
-                else:
-                    keep_going = False
-                    continue
-
-        if keep_going:
-            results2.append(data_)
-
-            # Print feedback
+    for result in results:
             if not args.quiet_as_a_mouse:
 
                 if args.json:
                     print(json_output)
                     json_output = "  ["
-                if args.path:
-                    if args.json:
-                        for path_ in args.path:
-                            json_output += json.dumps(long_data.get_path(path_))+","
-                        json_output = json_output[:-1] # Remove the last comma
-                    else:
-                        for path_ in args.path:
-                            pprint(long_data.get_path(path_))
+                if False:
+                    pass
                 elif args.long:
                     if args.json:
-                        json_output += json.dumps(long_data.data())+","
+                        json_output += json.dumps(result.data())+","
                     else:
-                        pprint(long_data.data())
+                        pprint(result.data())
                 else:
                     if args.json:
-                        json_output += json.dumps(record_name)
+                        json_output += json.dumps(result.name)
                     else:
-                        print(record_name)
-
+                        print(result)
                 if args.json:
                     json_output += "],"
 
-    results = results2
-    if args.json and not args.quiet_as_a_mouse:
-        json_output = json_output[:-1] # Remove the last comma
-        print(json_output)
-        print("]")
-
-    # Actions
-    if args.delete or args.update:
-
-        # Confirm if making changes
-        type_of_change = ""
-        if args.delete:
-            type_of_change = "delete"
-        elif args.update:
-            type_of_change = "update"
-        doit = args.use_the_force_luke
-        if args.quiet_as_a_mouse:
-            if doit and not args.andele_andele:
-                time.sleep(3)
+    if not args.quiet_as_a_mouse:
+        if args.json:
+            json_output = json_output[:-1] # Remove the last comma
+            print(json_output)
+            print("]")
         else:
-            if doit:
-                print(f"Performing {type_of_change} without confirmation.")
-                if not args.andele_andele:
-                    print("Waiting 3 seconds.")
-                    time.sleep(3)
-            else:
-                doit = confirm(f"Are you sure you want to {type_of_change} "
-                               f"{len(results)} record(s) [y/n]? ")
-
-        # For each record
-        if doit:
-            for data_ in results:
-                #record_name = data_[0]
-                record_id = data_[1]
-
-                # Delete
-                if args.delete:
-                    if not args.quiet_as_a_mouse:
-                        print("Deleting record")
-                    jamf_record_class(record_id).delete()
-
-                # Update
-                elif args.update:
-                    long_data = data_[2] # long_data is prefetched for update
-                    success = True
-                    paths = []
-
-                    for update_ in args.update:
-                            update2_ = re.match("(.*)=(.*)", update_)
-                            if update2_:
-                                path_ = update2_[1]
-                                paths.append(path_)
-                                value_ = update2_[2]
-                                if not args.quiet_as_a_mouse:
-                                    old = long_data.get_path(path_)
-                                    if not args.quiet_as_a_mouse:
-                                        print(f"Old value: {path_} = {old}")
-
-                                success = long_data.set_path(path_, value_)
-
-                            else:
-                                if not args.quiet_as_a_mouse:
-                                    print(f"Couldn't find {update_}")
-                                success = False
-
-                    if success:
-                        long_data.put()
-
-                        # Fetch updated record
-                        if not args.quiet_as_a_mouse:
-                            new_data = jamf_record_class(record_id)
-                            if new_data:
-                                for path_ in paths:
-                                    new_ = new_data.get_path(path_)
-                                    print(f"New value: {path_} = {new_}")
+            print("Count: "+str(len(results)))
 
 
 if __name__ == '__main__':
