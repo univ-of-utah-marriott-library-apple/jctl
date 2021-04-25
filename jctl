@@ -17,7 +17,7 @@ __email__ = 'reynolds@biology.utah.edu, sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences'
 __license__ = 'MIT'
 __version__ = "1.1.0"
-min_jamf_version = "0.6.0"
+min_jamf_version = "0.6.1"
 
 
 from pprint import pprint
@@ -29,10 +29,6 @@ import pathlib
 import re
 import sys
 import time
-
-#import jamf.admin
-#from jamf.package import Package
-#import jamf.config
 
 
 class Parser:
@@ -52,8 +48,8 @@ class Parser:
             help='Search for regular expression matches')
         self.parser.add_argument('-i', '--id', nargs='*',
             help='Search for id matches')
-#         self.parser.add_argument('-s', '--searchpath', action='append',
-#             help='Search for a path (e.g. \'-p general,id==152\'')
+        self.parser.add_argument('-s', '--searchpath', action='append',
+            help='Search for a path (e.g. \'-p general,id==152\'')
         # Print options
         self.parser.add_argument('-l', '--long', action='store_true',
             help='List long format')
@@ -62,8 +58,8 @@ class Parser:
         self.parser.add_argument('--quiet-as-a-mouse', action='store_true',
             help='Don\'t print anything')
         # Path
-#         self.parser.add_argument('-p', '--path', action='append',
-#             help='Print out path (e.g. \'-p general -p serial_number\')')
+        self.parser.add_argument('-p', '--path', action='append',
+            help='Print out path (e.g. \'-p general -p serial_number\')')
 
         # Actions
 #         self.parser.add_argument('-d', '--delete', action='store_true',
@@ -85,10 +81,10 @@ class Parser:
         if args.quiet_as_a_mouse:
             if args.json:
                 print("Can't print json if quiet...")
-                _exit()
+                exit()
             if args.long:
                 print("Can't print long if quiet...")
-                _exit()
+                exit()
         return args
 
 
@@ -96,19 +92,16 @@ def check_version():
     try:
         jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
         min_first, min_second, min_third = min_jamf_version.split(".")
-
         if ( int(jamf_first) <= int(min_first) and
              int(jamf_second) <= int(min_second) and
              int(jamf_third) < int(min_third)):
              print(f"Your Version is: {jamf.__version__}, you need at least "
                    f"version {min_jamf_version} to run this version of jctl.")
-             _exit()
-
+             exit()
     except AttributeError:
              print(f"Your Version is below 0.4.2, you need at least version "
                    f"{min_jamf_version} to run this version of jctl.")
-             _exit()
-
+             exit()
 
 def confirm(_message):
     """
@@ -121,6 +114,35 @@ def confirm(_message):
         answer = input(_message).lower()
     return answer == "y"
 
+def check_for_match(path_data, search, op):
+    if isinstance(path_data, str):
+        if op == "==" and path_data == search:
+            return True
+        elif op == "!=" and path_data != search:
+            return True
+        elif op == "~=":
+            m = re.search(search, path_data)
+            if m:
+                return True
+            else:
+                return False
+    elif isinstance(path_data, list):
+        # I'm not sure this is the best way to handle arrays...
+        for i in path_data:
+            result = check_for_match(i, search)
+            if result:
+                return True
+            else:
+                return False
+    elif path_data == None and search == "None":
+        return op == "==" or op == "~="
+    elif path_data == False and search == "False":
+        return op == "==" or op == "~="
+    elif path_data == True and search == "True":
+        return op == "==" or op == "~="
+    else:
+        return op == "!="
+
 def main(argv):
     # THERE ARE EXITS THROUGHOUT
     logger = logging.getLogger(__name__)
@@ -129,27 +151,33 @@ def main(argv):
     logger.debug(f"args: {args!r}")
     if args.version:
         print("jctl "+__version__)
-        print("python_jamf "+jamf.__version__+ " ("+min_jamf_version+" required)")
-        _exit()
+        print(f"python_jamf {jamf.__version__} ({min_jamf_version} required)")
+        exit(1)
     check_version()
     if args.config:
         api = jamf.API(config_path=args.config)
     else:
         api = jamf.API()
 
-    # Get the main class
-    records = jamf.records.class_name(args.record, case_sensitive=False)()
+    # Are we making a change?
+    making_a_change = False
 
-    # Filter records
-    results = []
+    # Get the main class
+    all_records = jamf.records.class_name(args.record, case_sensitive=False)()
+
+    if not args.quiet_as_a_mouse and making_a_change:
+        print("Server: "+api.url)
+
+    # Quick filter records
+    quick_results = []
     if args.regex or args.exact or args.id:
         temps = []
         if args.regex:
             for regex in args.regex:
-                temps = temps + [records.recordsWithRegex(regex)]
+                temps = temps + [all_records.recordsWithRegex(regex)]
         if args.exact:
             for name in args.exact:
-                temps = temps + [records.recordWithName(name)]
+                temps = temps + [all_records.recordWithName(name)]
         if args.id:
             for id in args.id:
                 try:
@@ -157,40 +185,64 @@ def main(argv):
                 except ValueError:
                     print(f"ID must be a number: {id}")
                     exit(1)
-                temps = temps + [records.recordWithId(id)]
-
-        # Filter
+                temps = temps + [all_records.recordWithId(id)]
         for temp in temps:
             if temp:
-                results = results + [temp]
-
+                quick_results = quick_results + [temp]
     else:
-        results = records
+        quick_results = all_records
 
-    if results:
-        results = sorted(results)
+    if quick_results:
+        sorted_results = sorted(quick_results)
+#    pprint(sorted_results)
 
-    # Print feedback
+    # Filter and print
+    # Filtering is slow so print in the same loop for continual feedback
+    results2 = []
     if args.json and not args.quiet_as_a_mouse:
         json_output = "["
-    for result in results:
+    for record in sorted_results:
+       # Check to see if it's filtered
+        not_filtered = True
+        if args.searchpath:
+            for searchpath in args.searchpath:
+                m = re.match("(.*)([=~!]=)(.*)", searchpath)
+                if (not_filtered and m):
+                    path_data = record.get_path(m[1])
+                    not_filtered = check_for_match(path_data, m[3], m[2])
+                    if not not_filtered:
+                        continue
+                else:
+                    not_filtered = False
+                    continue
+        if not_filtered:
+            results2.append(record)
+            # Print feedback
             if not args.quiet_as_a_mouse:
-
                 if args.json:
                     print(json_output)
                     json_output = "  ["
+                if args.path:
+                    if args.json:
+                        for path_ in args.path:
+                            json_output += json.dumps(record.get_path(path_))
+                            json_output += ","
+                        json_output = json_output[:-1] # Remove the last comma
+                    else:
+                        for path_ in args.path:
+                            pprint(record.get_path(path_))
                 if False:
                     pass
                 elif args.long:
                     if args.json:
-                        json_output += json.dumps(result.data())+","
+                        json_output += json.dumps(record.data())+","
                     else:
-                        pprint(result.data())
+                        pprint(record.data())
                 else:
                     if args.json:
-                        json_output += json.dumps(result.name)
+                        json_output += json.dumps(record.name)
                     else:
-                        print(result)
+                        print(record)
                 if args.json:
                     json_output += "],"
 
@@ -200,7 +252,7 @@ def main(argv):
             print(json_output)
             print("]")
         else:
-            print("Count: "+str(len(results)))
+            print("Count: "+str(len(results2)))
 
 
 if __name__ == '__main__':
@@ -209,4 +261,4 @@ if __name__ == '__main__':
     try:
         main(sys.argv[1:])
     except KeyboardInterrupt:
-            _exit(1)
+            exit(1)
