@@ -14,6 +14,31 @@ Print policy name, category, and other trigger (as json)
 
     jctl policies -p general/name -p general/category/name -p general/trigger_other -j
 
+Update policy computer group
+
+    jctl policies -p general/name -p scope -s scope/computer_groups==None -s scope/departments==None -s scope/all_computers==false -s scope/computers==None -u scope/computer_groups="{'computer_group': {'id': '872', 'name': '01 -  Student, Staff, Opt-In'}}"
+
+Update policy package
+
+    jctl policies -r 1Password -l -u package_configuration/packages/package/name=1Password-7.8.1.pkg
+
+Note, the above only works if a package is already configured. If there isn't one configured, it fails.
+This should work but it doesn't.
+
+    jctl policies -r Chrome -u package_configuration/packages='["package":{"name":"GoogleChrome-90.0.4430.72.pkg"}]'
+
+Print a script (named msupdate.sh)
+
+    jctl scripts -x msupdate.sh -p script_contents
+
+Print a script that looks good (named msupdate.sh)
+
+    jctl scripts -x msupdate.sh -S script_contents
+
+Show all packages and the policies, patch, and groups they are included in.
+
+    jctl packages -S view_included
+
 """
 
 
@@ -21,8 +46,8 @@ __author__ = 'James Reynolds, Sam Forester'
 __email__ = 'reynolds@biology.utah.edu, sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences'
 __license__ = 'MIT'
-__version__ = "1.1.1"
-min_jamf_version = "0.6.2"
+__version__ = "1.1.2"
+min_jamf_version = "0.6.3"
 
 
 from pprint import pprint
@@ -78,6 +103,10 @@ class Parser:
             help="Don't pause 3 seconds when updating or deleting without "
                  "confirmation. DANGER! This can delete everything FAST!")
 
+        # Actions
+        self.parser.add_argument('-S', '--sub-command', nargs='+',
+            help='Execute subcommand for record')
+
     def parse(self, argv):
         """
         :param argv:    list of arguments to parse
@@ -89,11 +118,39 @@ class Parser:
             flags += 1
         if args.update:
             flags += 1
+        if args.sub_command:
+            flags += 1
 
         if flags > 1:
             print("Can not do any of these actions together: delete, "
-                  "update.")
+                  "update, sub-command.")
             exit()
+
+        if args.sub_command:
+            rec = jamf.records.class_name(args.record, case_sensitive=False)
+            if not hasattr(rec, "sub_commands"):
+                print(args.record+" has no subcommands.")
+                exit(1)
+            sub_c = args.sub_command[0]
+            if not sub_c in rec.sub_commands or not hasattr(rec, sub_c):
+                print(f"{args.record} does not have subcommand: "
+                      f"{args.sub_command[0]}. Valid subcommands are:")
+                kys = rec.sub_commands.keys()
+                print("  "+"\n  ".join(str(key) for key in kys))
+                exit(1)
+            method = getattr(rec, sub_c)
+            if not callable(method):
+                print(f"{args.record} subcommand {sub_c} is broken...")
+                exit(1)
+            args_c = rec.sub_commands[sub_c]['required_args']
+            if len(args.sub_command)-1 != args_c:
+                print(f"{args.record} {args.sub_command[0]} requires {args_c} arg(s)")
+                exit(1)
+            args.sub_command = {
+                'attr': sub_c,
+                'args': args.sub_command[1:],
+                'prefs': rec.sub_commands[sub_c],
+            }
 
         if args.quiet_as_a_mouse:
             if args.json:
@@ -206,22 +263,25 @@ def main(argv):
     else:
         api = jamf.API()
 
-    # Are we making a change?
-    making_a_change = args.delete or args.update
-
     # Get the main class
-    all_records = jamf.records.class_name(args.record, case_sensitive=False)()
+    rec_class = jamf.records.class_name(args.record, case_sensitive=False)
+    all_records = rec_class()
+
+    # Are we making a change?
+    if args.sub_command:
+        making_a_change = args.sub_command['prefs']['makes_a_change']
+    else:
+        making_a_change = args.delete or args.update
 
     if not args.quiet_as_a_mouse and making_a_change:
         print("Server: "+api.url)
 
     # Quick filter records
-    quick_results = []
     if args.regex or args.exact or args.id:
         temps = []
         if args.regex:
             for regex in args.regex:
-                temps = temps + [all_records.recordsWithRegex(regex)]
+                temps = temps + all_records.recordsWithRegex(regex)
         if args.exact:
             for name in args.exact:
                 temps = temps + [all_records.recordWithName(name)]
@@ -233,14 +293,15 @@ def main(argv):
                     print(f"ID must be a number: {id}")
                     exit(1)
                 temps = temps + [all_records.recordWithId(id)]
+        quick = []
         for temp in temps:
             if temp:
-                quick_results = quick_results + [temp]
+                quick = quick + [temp]
     else:
-        quick_results = all_records
+        quick = all_records
 
-    if quick_results:
-        sorted_results = sorted(quick_results)
+    if quick:
+        sorted_results = sorted(quick)
     else:
         sorted_results = []
 
@@ -263,38 +324,46 @@ def main(argv):
                 else:
                     not_filtered = False
                     continue
-        if not_filtered:
-            filtered_results.append(record)
-            # Print feedback
-            if not args.quiet_as_a_mouse:
+        if not not_filtered:
+            continue
+        filtered_results.append(record)
+        if args.quiet_as_a_mouse:
+            continue
+
+        # Print feedback
+        if args.sub_command and args.sub_command['prefs']['when_to_run'] == 'print':
+            method = getattr(rec_class, args.sub_command['attr'])
+            method(record, *args.sub_command['args'])
+        else:
+            if args.json:
+                print(json_output)
+                json_output = "  ["
+            if args.path:
                 if args.json:
-                    print(json_output)
-                    json_output = "  ["
-                if args.path:
-                    if args.json:
-                        for path_ in args.path:
-                            json_output += json.dumps(record.get_path(path_))
-                            json_output += ","
-                        json_output = json_output[:-1] # Remove the last comma
-                    else:
-                        for path_ in args.path:
-                            printme = record.get_path(path_)
-                            if isinstance(printme, str):
-                                print(printme)
-                            else:
-                                pprint(printme)
-                elif args.long:
-                    if args.json:
-                        json_output += json.dumps(record.data())+","
-                    else:
-                        pprint(record.data())
+                    for path_ in args.path:
+                        json_output += json.dumps(record.get_path(path_))
+                        json_output += ","
+                    json_output = json_output[:-1] # Remove the last comma
                 else:
-                    if args.json:
-                        json_output += json.dumps(record.name)
-                    else:
-                        print(record)
+                    print(record)
+                    for path_ in args.path:
+                        printme = record.get_path(path_)
+                        if isinstance(printme, str):
+                            print(printme)
+                        else:
+                            pprint(printme)
+            elif args.long:
                 if args.json:
-                    json_output += "],"
+                    json_output += json.dumps(record.data())+","
+                else:
+                    pprint(record.data())
+            else:
+                if args.json:
+                    json_output += json.dumps(record.name)
+                else:
+                    print(record)
+            if args.json:
+                json_output += "],"
 
     if not args.quiet_as_a_mouse:
         if args.json:
@@ -308,6 +377,9 @@ def main(argv):
     # Confirm Make a change
     confirmed = False
     if making_a_change:
+        if len(filtered_results) == 0:
+            print("No records found")
+            exit(1)
         change_type_ = ""
         if args.delete:
             change_type_ = "delete"
