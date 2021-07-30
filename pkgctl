@@ -1,0 +1,362 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+"""
+
+
+__author__ = 'James Reynolds'
+__email__ = 'reynolds@biology.utah.edu'
+__copyright__ = 'Copyright (c) 2020 University of Utah, School of Biological Sciences'
+__license__ = 'MIT'
+__version__ = "0.5"
+min_jamf_version = "0.6.5"
+
+
+from pprint import pprint
+import argparse
+import ast
+import jamf
+import json
+import logging
+import re
+import sys
+import time
+
+
+class Parser:
+    def __init__(self):
+        valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
+        self.parser = argparse.ArgumentParser()
+        # https://docs.python.org/3/library/argparse.html
+        self.parser.add_argument('-C', '--config', help='path to config file')
+        self.parser.add_argument('-v', '--version', action='store_true',
+            help='print version and exit')
+        self.parser.add_argument('-g', '--groups', action='store_true',
+            help='Display packages as groups and exit')
+        self.parser.add_argument('-u', '--usage', action='store_true',
+            help='Display package usage and exit')
+        self.parser.add_argument('-d', '--definitions', action='store_true',
+            help='Set patch definitions')
+
+        self.parser.add_argument('-a', '--auto-promote', nargs='*',
+            help='Automatically update policies, groups, and patch policies that match '
+                 'supplied regular expression.')
+
+
+        self.parser.add_argument('-n', '--name', nargs='*',
+            help='Search for exact name matches')
+        self.parser.add_argument('-r', '--regex', nargs='*',
+            help='Search for regular expression matches')
+        self.parser.add_argument('-i', '--id', nargs='*',
+            help='Search for id matches')
+
+
+
+#         self.parser.add_argument('-u', '--upload', action='append',
+#             help='Upload package')
+
+
+    def parse(self, argv):
+        """
+        :param argv:    list of arguments to parse
+        :returns:       argparse.NameSpace object
+        """
+        args = self.parser.parse_args(argv)
+        return args
+
+
+def check_version():
+    try:
+        jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
+        min_first, min_second, min_third = min_jamf_version.split(".")
+        if ( int(jamf_first) <= int(min_first) and
+             int(jamf_second) <= int(min_second) and
+             int(jamf_third) < int(min_third)):
+             print(f"Your Version is: {jamf.__version__}, you need at least "
+                   f"version {min_jamf_version} to run this version of jctl.")
+             exit()
+    except AttributeError:
+             print(f"Your Version is below 0.4.2, you need at least version "
+                   f"{min_jamf_version} to run this version of jctl.")
+             exit()
+
+def confirm(_message):
+    """
+    Ask user to enter Y or N (case-insensitive).
+    :return: True if the answer is Y.
+    :rtype: bool
+    """
+    answer = ""
+    while answer not in ["y", "n"]:
+        answer = input(_message).lower()
+    return answer == "y"
+
+
+
+
+def process_package_disassociation(package, item):
+    print("can't disassociate yet")
+    print()
+    return False
+
+
+
+
+def process_package_promotion(package, item, packages):
+    while True:
+        answer = ''
+        choices = list(map(str, range(1, len(packages)+1)))
+        while answer not in choices + ['b', 'x', 'q']:
+            print(f"Promote {item[1]} ({item[0]}) to which package?")
+            index = 1
+            for val in packages:
+                print(f"  [{index}] {val}")
+                index += 1
+            answer = input("Number, [b]ack, or e[x]it/[q]uit: ").lower()
+            print()
+        if answer == "x" or answer == "q":
+            exit()
+        elif answer == "b":
+            return False
+        else:
+            new_package = packages[int(answer)-1]
+            the_class = jamf.records.class_name(item[0])
+            rec = the_class().find(item[1])
+
+            if item[0] == "PatchPolicies":
+                if 'version' in new_package.metadata:
+                    pkg_version = new_package.metadata['version']
+                else:
+                    print(f"Couldn't determine version for {new_package.name}")
+                    return False
+                rec.data['general']['target_version'] = pkg_version
+                del(rec.data['user_interaction']['self_service_icon'])
+                rec.save()
+                rec.refresh()
+                return True
+            elif item[0] == "Policies":
+                temp_packages = rec.data['package_configuration']['packages']
+                if int(temp_packages['size']) > 1:
+                    rec_packages = temp_packages['package']
+                else:
+                    rec_packages = [temp_packages['package']]
+                for rec_package in rec_packages:
+                    if rec_package['name'] == package.name:
+                        del rec_package['id']
+                        rec_package['name'] = new_package.name
+                        rec.save()
+                        rec.refresh()
+                        print("here2")
+                        return True
+            elif item[0] == "ComputerGroups":
+                criteria = rec.data['criteria']['criterion']
+                if not type(criteria) is list:
+                    criteria = [ criteria ]
+                found = False
+                print(new_package.name)
+                for crit in criteria:
+                    if crit['value'] == package.name:
+                        crit['value'] = new_package.name
+                        rec.save()
+                        return True
+            return False
+
+def process_package_item(item, packages):
+    rectype = item[0]
+    rec = item[1]
+    package = item[2]
+    while True:
+        answer = ''
+        print(f"{rec} ({rectype})")
+        while answer not in ['d', 'p', 'b', 'x', 'q']:
+            answer = input("[d]isassociate from package, [p]romote, [b]ack, e[x]it/[q]uit: ").lower()
+            print("")
+        if answer == "x" or answer == "q":
+            exit()
+        elif answer == "b":
+            return False
+        elif answer == "p":
+            result = process_package_promotion(package, item, packages)
+            if result:
+                return True
+        elif answer == "d":
+            result = process_package_disassociation(package, item)
+            if result:
+                return True
+
+def process_package(package, packages):
+    while True:
+        answer = ''
+        while answer not in ['b', 'x', 'd']:
+            print(package.name)
+            answer = input("[d]elete package, [b]ack, or e[x]it/[q]uit: ").lower()
+            print("")
+        if answer == "x" or answer == "q":
+            exit()
+        elif answer == "b":
+            return False
+        elif answer == "d":
+            confirmed = confirm(f"Are you sure you want to delete the package named {package.name} (this will not remove it from the JDS, only delete it from the database)? ")
+            if confirmed:
+                package.delete()
+                return True
+
+def process_package_group(group, packages):
+    index = 1
+    items = []
+    for package in packages:
+        items.append(['Package', package])
+        index += 1
+        if 'policies' in package.related:
+            for rec in package.related['policies']:
+                items.append(['Policies', rec, package])
+                index += 1
+        if 'groups' in package.related:
+            for rec in package.related['groups']:
+                items.append(['ComputerGroups', rec, package])
+                index += 1
+        if 'patchpolicies' in package.related:
+            for rec in package.related['patchpolicies']:
+                items.append(['PatchPolicies', rec, package])
+                index += 1
+    while True:
+        answer = ''
+        choices = list(map(str, range(1, index+1)))
+        while answer not in choices + ['n', 'x', 'q']:
+            print(group)
+
+            print(package.name)
+            for index, item in enumerate(items):
+                rectype = item[0]
+                rec = item[1]
+                lastrectype = ""
+                if rectype == "Package":
+                    if 'patchsoftwaretitles' in rec.related:
+                        print(f"  [{index+1}] {rec}")
+                    else:
+                        print(f"  [{index+1}] {rec} [no patch defined]")
+                else:
+                    if rectype != lastrectype:
+                        print(f"     {rectype}")
+                        rectype = lastrectype
+                    print(f"       [{index+1}] {rec}")
+            answer = input("Number, [n]ext group, or e[x]it/[q]uit: ").lower()
+            print("")
+        if answer == "x" or answer == "q":
+            exit()
+        elif answer == "n":
+            return False
+
+        else:
+            print("1")
+            item = items[int(answer)-1]
+            if item[0] == "Package":
+                print("2")
+                result = process_package(item[1], packages)
+                if result:
+                    print("here1")
+                    item[1].refresh_related()
+            else:
+                print("3")
+                result = process_package_item(item, packages)
+                if result:
+                    return True
+
+def main(argv):
+    logger = logging.getLogger(__name__)
+    timmy = Parser()
+    args = timmy.parse(argv)
+    logger.debug(f"args: {args!r}")
+    if args.version:
+        print("jctl "+__version__)
+        print(f"python_jamf {jamf.__version__} ({min_jamf_version} required)")
+        exit(1)
+    check_version()
+    if args.config:
+        api = jamf.API(config_path=args.config)
+    else:
+        api = jamf.API()
+
+    all_packages = jamf.records.Packages()
+    # Quick filter records
+    if all_packages and (args.regex or args.name or args.id):
+        found = []
+        if args.regex:
+            for regex in args.regex:
+                found = found + all_packages.recordsWithRegex(regex)
+        if args.name:
+            for name in args.name:
+                found = found + [all_packages.recordWithName(name)]
+        if args.id:
+            for id in args.id:
+                try:
+                    id = int(id)
+                except ValueError:
+                    print(f"ID must be a number: {id}")
+                    exit(1)
+                found = found + [all_packages.recordWithId(id)]
+        quick = []
+        for temp in found:
+            if temp:
+                quick = quick + [temp]
+    else:
+        quick = all_packages
+    if quick:
+        sorted_results = sorted(quick)
+    else:
+        sorted_results = []
+
+    # Print package usage
+    if args.usage:
+        print("Analyzing Jamf data...")
+        for record in sorted_results:
+            record.usage_print_during()
+        exit()
+
+    # Generate groups
+    for record in sorted_results:
+        record.metadata
+
+    # Print package groups
+    if args.groups:
+        for group, children in all_packages.groups.items():
+            print(group)
+            for child in children:
+                print(f"  {child}")
+        exit()
+
+    # Set package definitions
+    update_definitions = False
+#     if not args.definitions:
+#         update_definitions = confirm(f"Do you want to update patch package definitions? ")
+    if args.definitions or update_definitions:
+        print("Updating patch definitions...")
+        all_psts = jamf.records.PatchSoftwareTitles()
+        change_made = False
+        for pst in all_psts:
+            result = pst.set_all_packages_update_during()
+            if result:
+                pst.save()
+                change_made = True
+        if not change_made:
+            print("No packages match patch software titles")
+        if args.definitions:
+            exit()
+
+
+    # Interactive package manager
+    print("Analyzing Jamf data...")
+    for group, children in all_packages.groups.items():
+        process_package_group(group, children)
+
+
+
+
+if __name__ == '__main__':
+    fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
+    logging.basicConfig(level=logging.INFO, format=fmt)
+    try:
+        main(sys.argv[1:])
+    except KeyboardInterrupt:
+            exit(1)
