@@ -12,3 +12,19 @@
 *log/
 *private/
 
+build/lib/jctl/__init__.py
+build/lib/jctl/patch.py
+build/lib/jctl/setconfig.py
+build/scripts-3.8/jctl
+build/scripts-3.8/pkgctl
+dist/jctl-1.1.4-py3-none-any.whl
+dist/jctl-1.1.4.tar.gz
+dist/jctl-1.1.4/jctl/__init__.py
+dist/jctl-1.1.4/jctl/jctl
+dist/jctl-1.1.4/jctl/patch.py
+dist/jctl-1.1.4/jctl/pkgctl
+dist/jctl-1.1.4/jctl/setconfig.py
+dist/jctl-1.1.4/PKG-INFO
+dist/jctl-1.1.4/README.md
+dist/jctl-1.1.4/setup.cfg
+dist/jctl-1.1.4/setup.py
