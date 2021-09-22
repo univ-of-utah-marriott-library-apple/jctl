@@ -27,5 +27,5 @@ setuptools.setup(
         "Development Status :: 4 - Beta",
     ],
     python_requires='>=3.6',
-    install_requires=['python-jamf'],
+    install_requires=['python-jamf>=0.6.6'],
 )
