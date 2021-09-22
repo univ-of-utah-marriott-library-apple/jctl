@@ -12,9 +12,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/univ-of-utah-marriott-library-apple/jctl",
-    packages=setuptools.find_packages(),
     scripts=['jctl/jctl','jctl/pkgctl'],
-    package_data={'': ['*.json']},
     entry_points={
         'console_scripts': ['jamfconfig=jamf.setconfig:main']
     },
@@ -27,5 +25,4 @@ setuptools.setup(
         "Development Status :: 4 - Beta",
     ],
     python_requires='>=3.6',
-    install_requires=['python-jamf>=0.6.6'],
 )
