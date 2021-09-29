@@ -71,28 +71,14 @@ class Parser:
         return self.parser.parse_args(argv)
 
 def check_version():
+	if not jamf.version.check_version(min_jamf_version):
+		print(f"setconfig requires python-jamf {min_jamf_version} or newer.")
+		sys.exit()
 
-    try:
-        jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
-        min_first, min_second, min_third = min_jamf_version.split(".")
-        
-        if ( int(jamf_first) <= int(min_first) and
-             int(jamf_second) <= int(min_second) and
-             int(jamf_third) < int(min_third)):
-             print(f"Your Version is: {jamf.__version__}, you need at least version {min_jamf_version} to run jctl.")
-             sys.exit()
-             
-    except AttributeError:
-             print(f"Your Version is below 0.4.2, you need at least version {min_jamf_version} to run jctl.")
-             sys.exit()
-
-
-
-def main(argv):
+def setconfig(argv):
     logger = logging.getLogger(__name__)
     args = Parser().parse(argv)
     logger.debug(f"args: {args!r}")
-
 
     if args.test:
         api = jamf.API()
@@ -110,7 +96,12 @@ def main(argv):
         if args.path:
             config_path = args.path
         else:
-            config_path = self.default_pref
+            myplatform = platform.system()
+            if myplatform == "Darwin":
+                default_pref = jamf.config.MACOS_PREFS_TILDA
+            elif myplatform == "Linux":
+                default_pref = jamf.config.LINUX_PREFS_TILDA
+            config_path = default_pref
 
         if config_path[0] == '~':
             config_path = path.expanduser(config_path)
@@ -139,8 +130,12 @@ def main(argv):
         conf.save(config_path=config_path)
 
 
-if __name__ == '__main__':
+def main():
     check_version()
-    fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
+    fmt = "%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s"
     logging.basicConfig(level=logging.INFO, format=fmt)
-    main(sys.argv[1:])
+    setconfig(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()
