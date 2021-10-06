@@ -8,7 +8,7 @@ jctl_version = (
     .strip()
 )
 
-assert os.path.isfile("jctl/version.py")
+#assert os.path.isfile("jctl/version.py")
 with open("jctl/VERSION", "w", encoding="utf-8") as fh:
     fh.write(f"{jctl_version}\n")
 
