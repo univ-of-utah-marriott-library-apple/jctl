@@ -100,15 +100,15 @@ import time
 
 class Parser:
     def __init__(self):
-        valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
+        self.valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
         self.parser = argparse.ArgumentParser()
         # https://docs.python.org/3/library/argparse.html
         self.parser.add_argument('-C', '--config', help='path to config file')
         self.parser.add_argument('-v', '--version', action='store_true',
             help='print version and exit')
-        self.parser.add_argument('record', metavar='RECORD',
-            choices=valid_jamf_records, help='Valid Jamf Records are: '+
-            ', '.join(valid_jamf_records))
+        self.parser.add_argument('record', nargs='?',
+            help='Valid Jamf Records are: '+
+            ', '.join(self.valid_jamf_records))
         self.parser.add_argument('-n', '--name', nargs='*',
             help='Search for exact name match')
         self.parser.add_argument('-r', '--regex', nargs='*',
@@ -162,6 +162,14 @@ class Parser:
         :returns:       argparse.NameSpace object
         """
         args = self.parser.parse_args(argv)
+        if args.version:
+            print("jctl "+__version__)
+            print(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
+            exit(1)
+        check_version()
+        if args.record == None:
+            print("Please specify a record type:" + ', '.join(self.valid_jamf_records))
+            exit()
         flags = 0
         if args.delete:
             flags += 1
@@ -171,12 +179,10 @@ class Parser:
             flags += 1
         if args.update:
             flags += 1
-
         if flags > 1:
             print("Can not do any of these actions together: delete, create, "
                   "sub-command, or update.")
             exit()
-
         if args.sub_command:
             plural_cls = jamf.records.class_name(args.record, case_sensitive=False)
             singlar_cls = plural_cls.singular_class
@@ -225,7 +231,6 @@ class Parser:
                 print(f"{args.record} subcommand {sub_c} has no valid methods. They "
                       f"should look something like this: {sub_c}_print_during.")
                 exit(1)
-
         if args.quiet_as_a_mouse:
             if args.json:
                 print("Can't print json if quiet...")
@@ -255,19 +260,9 @@ class Parser:
 
 
 def check_version():
-    try:
-        jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
-        min_first, min_second, min_third = min_jamf_version.split(".")
-        if ( int(jamf_first) <= int(min_first) and
-             int(jamf_second) <= int(min_second) and
-             int(jamf_third) < int(min_third)):
-             print(f"Your Version is: {jamf.__version__}, you need at least "
-                   f"version {min_jamf_version} to run this version of jctl.")
-             exit()
-    except AttributeError:
-             print(f"Your Version is below 0.4.2, you need at least version "
-                   f"{min_jamf_version} to run this version of jctl.")
-             exit()
+	if not jamf.version.check_version(min_jamf_version):
+		print(f"jctl requires python-jamf {min_jamf_version} or newer.")
+		exit()
 
 
 def confirm(_message):
@@ -318,11 +313,6 @@ def main(argv):
     timmy = Parser()
     args = timmy.parse(argv)
     logger.debug(f"args: {args!r}")
-    if args.version:
-        print("jctl "+__version__)
-        print(f"python_jamf {jamf.__version__} ({min_jamf_version} required)")
-        exit(1)
-    check_version()
     if args.config:
         api = jamf.API(config_path=args.config)
     else:
