@@ -1,11 +1,23 @@
 import setuptools
+import subprocess
+import os
 
-with open("README.md", "r") as fh:
+jctl_version = (
+    subprocess.run(["git", "describe", "--tags"], stdout=subprocess.PIPE)
+    .stdout.decode("utf-8")
+    .strip()
+)
+
+assert os.path.isfile("jctl/version.py")
+with open("jctl/VERSION", "w", encoding="utf-8") as fh:
+    fh.write(f"{jctl_version}\n")
+
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="jctl",
-    version="1.1.4",
+    version=jctl_version,
     author="The University of Utah",
     author_email="mlib-its-mac@lists.utah.edu",
     description="Command line tool that utilizes Python-Jamf",
