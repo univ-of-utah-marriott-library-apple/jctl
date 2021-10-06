@@ -1,4 +1,5 @@
 name: Build and test jctl
+on:
   push:
     branches: [ main ]
   pull_request:
