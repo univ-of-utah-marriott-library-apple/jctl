@@ -5,4 +5,4 @@ jctl
 Command line tool to use Python-Jamf
 """
 
-__version__ = "1.1.4"
+from . import version
