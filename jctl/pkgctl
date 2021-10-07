@@ -9,8 +9,8 @@ __author__ = 'James Reynolds'
 __email__ = 'reynolds@biology.utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, School of Biological Sciences'
 __license__ = 'MIT'
-__version__ = "0.5"
-min_jamf_version = "0.6.5"
+__version__ = "0.7"
+min_jamf_version = "0.6.8"
 
 
 from pprint import pprint
@@ -67,19 +67,12 @@ class Parser:
 
 
 def check_version():
-    try:
-        jamf_first, jamf_second, jamf_third = jamf.__version__.split(".")
-        min_first, min_second, min_third = min_jamf_version.split(".")
-        if ( int(jamf_first) <= int(min_first) and
-             int(jamf_second) <= int(min_second) and
-             int(jamf_third) < int(min_third)):
-             print(f"Your Version is: {jamf.__version__}, you need at least "
-                   f"version {min_jamf_version} to run this version of jctl.")
-             exit()
-    except AttributeError:
-             print(f"Your Version is below 0.4.2, you need at least version "
-                   f"{min_jamf_version} to run this version of jctl.")
-             exit()
+    python_jamf_version = jamf.version.jamf_version_up_to(min_jamf_version)
+    if python_jamf_version != min_jamf_version:
+        print(f"pkgctl requires python-jamf {min_jamf_version} or newer. "
+              f"You have {python_jamf_version}.")
+        exit()
+
 
 def confirm(_message):
     """
@@ -93,14 +86,10 @@ def confirm(_message):
     return answer == "y"
 
 
-
-
 def process_package_disassociation(package, item):
     print("can't disassociate yet")
     print()
     return False
-
-
 
 
 def process_package_promotion(package, item, packages):
@@ -249,16 +238,12 @@ def process_package_group(group, packages):
             return False
 
         else:
-            print("1")
             item = items[int(answer)-1]
             if item[0] == "Package":
-                print("2")
                 result = process_package(item[1], packages)
                 if result:
-                    print("here1")
                     item[1].refresh_related()
             else:
-                print("3")
                 result = process_package_item(item, packages)
                 if result:
                     return True

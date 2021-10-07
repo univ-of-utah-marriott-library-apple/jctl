@@ -83,8 +83,8 @@ __author__ = 'James Reynolds, Sam Forester'
 __email__ = 'reynolds@biology.utah.edu, sam.forester@utah.edu'
 __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences'
 __license__ = 'MIT'
-__version__ = "1.1.4"
-min_jamf_version = "0.6.5"
+__version__ = "1.1.9"
+min_jamf_version = "0.6.8"
 
 
 from pprint import pprint
@@ -260,8 +260,10 @@ class Parser:
 
 
 def check_version():
-	if not jamf.version.check_version(min_jamf_version):
-		print(f"jctl requires python-jamf {min_jamf_version} or newer.")
+	python_jamf_version = jamf.version.jamf_version_up_to(min_jamf_version)
+	if python_jamf_version != min_jamf_version:
+		print(f"jctl requires python-jamf {min_jamf_version} or newer. "
+		      f"You have {python_jamf_version}.")
 		exit()
 
 
