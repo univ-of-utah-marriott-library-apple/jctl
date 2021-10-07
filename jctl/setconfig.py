@@ -11,7 +11,7 @@ __copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
 __license__ = 'MIT'
 __version__ = "1.0.4"
 
-min_jamf_version = "0.4.7"
+min_jamf_version = "0.6.9"
 
 
 import argparse
@@ -71,8 +71,10 @@ class Parser:
         return self.parser.parse_args(argv)
 
 def check_version():
-	if not jamf.version.check_version(min_jamf_version):
-		print(f"setconfig requires python-jamf {min_jamf_version} or newer.")
+	python_jamf_version = jamf.version.jamf_version_up_to(min_jamf_version)
+	if python_jamf_version != min_jamf_version:
+		print(f"setconfig requires python-jamf {min_jamf_version} or newer. "
+		      f"You have {python_jamf_version}.")
 		sys.exit()
 
 def setconfig(argv):
