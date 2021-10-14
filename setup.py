@@ -19,9 +19,6 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/univ-of-utah-marriott-library-apple/jctl",
     scripts=['jctl/jctl','jctl/pkgctl','jctl/patch.py'],
-    entry_points={
-        'console_scripts': ['jamfconfig=jamf.setconfig:main']
-    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
