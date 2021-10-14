@@ -18,7 +18,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/univ-of-utah-marriott-library-apple/jctl",
-    scripts=['jctl/jctl','jctl/pkgctl','jctl/setconfig.py','jctl/patch.py'],
+    scripts=['jctl/jctl','jctl/pkgctl','jctl/patch.py'],
     entry_points={
         'console_scripts': ['jamfconfig=jamf.setconfig:main']
     },
