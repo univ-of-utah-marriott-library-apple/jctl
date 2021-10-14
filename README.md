@@ -1,132 +1,43 @@
 # jctl
 
-This is a Python 3 utility that depends on [python-jamf](https://github.com/univ-of-utah-marriott-library-apple/python-jamf). You can not use this utility without python-jamf installed first.
 
-## Requirements
+## Introduction
 
-This utility has been tested on macOS 10.14, macOS 11, and CentOS 7.
+`jctl` is a command line based tool to make using `python-jamf`, a Python 3 module to access Jamf Pro Classic API, easier to use. `jctl` uses `python-jamf` to select objects to create, delete, print and update. It allows performing Jamf Pro repetitive tasks quickly and provides options not available in the web GUI. It is similar to SQL statements, but far less complex.
 
-The jctl project requires python3 and python-jamf. Please make sure you have those by running the following commands.
+Along with `jctl` there are a few other tools that utilize `jctl` and `python-jamf`. 
 
-```bash
-python3
-```
+`patch.py` is a script designed to automate the patching process. 
 
-```python
-import jamf
-```
+`pkgctl` is similar to 'patch.py' but with a command line interface.
 
-macOS does not include python3. You can get python3 with [Anaconda](https://www.anaconda.com/) or [Homerew](https://brew.sh/). For example, this is how you install python3 with Homebrew.
+For more information on how [python-jamf](https://github.com/univ-of-utah-marriott-library-apple/python-jamf) works, please visit the Github page.
 
-```bash
-brew install python3
-```
 
-## Installation
+## Getting Help
 
-Change the directory you would like it located in.
+### Wiki
 
-```bash
-git clone https://github.com/univ-of-utah-marriott-library-apple/jctl.git
-```
+For further in-depth details please check out [the wiki](https://github.com/univ-of-utah-marriott-library-apple/jctl/wiki).
 
-As you can see, we don't really have an install script yet...
+### MacAdmin Slack Channel
 
-## Config file
+If you have additional questions, or need more help getting started, post a question on the MacAdmin's Slack [jctl](https://macadmins.slack.com/archives/C01C8KVV2UD) channel.
 
-To create a config file, run this commmand
+<p align="center">
+<img src="https://github.com/univ-of-utah-marriott-library-apple/python-jamf/wiki/images/MacAdmins_Slack_logo.png" alt="MacAdmin's Slack Logo">
+</p>
 
-```bash
-setconfig.py
-```
+### Virtual JNUC 2021 Presentation
 
-	Hostname (don't forget https:// and :8443): https://example.com:8443
-	username: james
-	Password:
+We will be presenting on `python-jamf` and `jctl` at the upcoming Virtual JNUC 2021 on on Thursday, Oct 21 at 1:00 PM - 1:30 PM MDT on [Turn 1000 clicks into 1 with python-jamf and jctl](https://reg.jamf.com/flow/jamf/jnuc2021/sessioncatalog/page/sessioncatalog/session/1620431676367001smXi)
 
-To print the settings (except password).
+Since 2010, Apple IT, users, and InfoSec leaders from around the world have rallied at the Jamf Nation User Conference (JNUC) for community presentations, deep-dive education sessions, and expert product insights. Focusing on new and better ways to connect, manage and protect Apple devices that simplify workflows for IT and InfoSec and keep users productive. The Virtual JNUC 2021 experience will be October 19 - October 21, 2021, and there will be no cost to attend the online keynote and sessions.
 
-```bash
-setconfig.py -P
-```
+Anyone and everyone is invited to register for the [virtual experience](https://reg.jamf.com/flow/jamf/jnuc2021/reg/login).
 
-	Using /Users/james/Library/Preferences/edu.utah.mlib.jamfutil.plist
-	https://example.com:8443
-	james
-	Password is set
+#### What are `python-jamf` and `jctl`?
 
-To test the settings
+Originally, it was a "patch" project that was focused on patch management including installer package management, patch management, including assigning package to patch definition, updating versions, version release branching (i.e. development, testing, production), and scripting and automation. Later, it was split into two projects, `python-jamf`, which is a python library that connects to a Jamf Pro server using Jamf Pro Classic API, including keychain support for Jamf Pro credentials via [keyring](https://github.com/jaraco/keyring) python project, support for [PyPi](https://pypi.org/project/python-jamf/) to support pip installation and currently supports 56 Jamf Pro record types which will expand in number as the project continues.
 
-```bash
-setconfig.py -t
-```
-
-	{'accounts': {'groups': None,
-				'users': {'user': [{'id': '2', 'name': 'james'},
-									{'id': '1', 'name': 'root'}]}}}
-
-To specify any of the settings on the command line, use -H, -u, or -p
-
-```bash
-setconfig.py -H https://example.com -u james -p secret
-```
-
-## patch.py
-
-This tool so far
-
-### Getting Help
-
-```bash
-patch.py --help
-patch.py list --help
-patch.py upload --help
-patch.py remove --help
-patch.py info --help
-patch.py update --help
-```
-
-### List all Patch Management Title Names
-
-```bash
-patch.py list
-```
-
-### List all uploaded packages
-
-```bash
-patch.py list --pkgs
-```
-
-### List all versions (and associated packages)
-
-```bash
-patch.py list --versions <Name of Patch Management Title>
-patch.py list --patches <Name of Patch Management Title>
-```
-
-### Modify Patch settings
-
-The following requires the user to have Jamf Admin Privileges
-
-```
-patch.py info /PATH/TO/PACKAGE
-patch.py upload /PATH/TO/PACKAGE
-patch.py remove <PACKAGE NAME>
-```
-
-## Other scripts
-
-The following scripts are preliminary scripts to update polcies en masse. Because they are still 0.1, we aren't making docs yet. But here they are if you want to check them out.
-
-* policy_categories.py, allows you to change all policy categories at once
-* policy_packages.py, allows you to change all policy packages at once
-
-Please see the headers of these scripts for instructions. They aren't exactly normal scripts. This is still 0.1.
-
-## Contributers
-
-- Sam Forester
-- James Reynolds
-- Topher Nadauld
-- Tony Williams
+Our presentation will cover how it works internally as a simple alternative to the usual cURL usage; usage example of workflows comparing using Jamf Pro web interface vs `jctl`; and lastly advanced usage and package management including example os subcommands for specific object types, filtering making interacting with the API simple & easy.
