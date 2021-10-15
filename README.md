@@ -5,11 +5,11 @@
 
 `jctl` is a command line based tool to make using `python-jamf`, a Python 3 module to access Jamf Pro Classic API, easier to use. `jctl` uses `python-jamf` to select objects to create, delete, print and update. It allows performing Jamf Pro repetitive tasks quickly and provides options not available in the web GUI. It is similar to SQL statements, but far less complex.
 
-Along with `jctl` there are a few other tools that utilize `jctl` and `python-jamf`. 
+Along with `jctl` there are a few other tools that utilize `jctl` and `python-jamf`.
 
-`patch.py` is a script designed to automate the patching process. 
+`patch.py` is a script designed to automate the patching process.
 
-`pkgctl` is similar to 'patch.py' but with a command line interface.
+`pkgctl` is similar to `patch.py` but with a command line interface.
 
 For more information on how [python-jamf](https://github.com/univ-of-utah-marriott-library-apple/python-jamf) works, please visit the Github page.
 
