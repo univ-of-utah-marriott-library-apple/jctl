@@ -116,7 +116,7 @@ class Parser:
         self.parser.add_argument('-i', '--id', nargs='*',
             help='Search for id matches')
         self.parser.add_argument('-s', '--searchpath', action='append',
-            help='Search for a path (e.g. \'-p general,id==152\'')
+            help='Search for a path (e.g. \'-s general/id==152\'')
         # Print options
         self.parser.add_argument('-l', '--long', action='store_true',
             help='List long format')
