@@ -11,6 +11,10 @@ Along with `jctl` there are a few other tools that utilize `jctl` and `python-ja
 
 `pkgctl` is similar to `patch.py` but with a command line interface.
 
+#### What are `python-jamf` and `jctl`?
+
+Originally, it was a "patch" project that was focused on patch management including installer package management, patch management, including assigning package to patch definition, updating versions, version release branching (i.e. development, testing, production), and scripting and automation. Later, it was split into two projects, `python-jamf`, which is a python library that connects to a Jamf Pro server using Jamf Pro Classic API, including keychain support for Jamf Pro credentials via [keyring](https://github.com/jaraco/keyring) python project, support for [PyPi](https://pypi.org/project/python-jamf/) to support pip installation and currently supports 56 Jamf Pro record types which will expand in number as the project continues.
+
 For more information on how [python-jamf](https://github.com/univ-of-utah-marriott-library-apple/python-jamf) works, please visit the Github page.
 
 ## Quick Start
@@ -51,9 +55,3 @@ If you have additional questions, or need more help getting started, post a ques
 <p align="center">
 <img src="https://github.com/univ-of-utah-marriott-library-apple/python-jamf/wiki/images/MacAdmins_Slack_logo.png" alt="MacAdmin's Slack Logo">
 </p>
-
-#### What are `python-jamf` and `jctl`?
-
-Originally, it was a "patch" project that was focused on patch management including installer package management, patch management, including assigning package to patch definition, updating versions, version release branching (i.e. development, testing, production), and scripting and automation. Later, it was split into two projects, `python-jamf`, which is a python library that connects to a Jamf Pro server using Jamf Pro Classic API, including keychain support for Jamf Pro credentials via [keyring](https://github.com/jaraco/keyring) python project, support for [PyPi](https://pypi.org/project/python-jamf/) to support pip installation and currently supports 56 Jamf Pro record types which will expand in number as the project continues.
-
-Our presentation will cover how it works internally as a simple alternative to the usual cURL usage; usage example of workflows comparing using Jamf Pro web interface vs `jctl`; and lastly advanced usage and package management including example os subcommands for specific object types, filtering making interacting with the API simple & easy.
