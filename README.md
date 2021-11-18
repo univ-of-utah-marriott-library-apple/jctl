@@ -15,7 +15,7 @@ For more information on how [python-jamf](https://github.com/univ-of-utah-marrio
 
 ## Quick Start
 
-###Installing
+### Installing
 
  - Install Module & Requirements: `sudo pip3 install jctl`
  - On your Jamf Pro server create a Jamf Pro API User
@@ -23,7 +23,7 @@ For more information on how [python-jamf](https://github.com/univ-of-utah-marrio
  - Enter hostname, username, and password
  - Test: `conf-python-jamf -t`
 
-###Uninstalling
+### Uninstalling
 
 Uninstalling `jctl` is easy if you installed it via `pip`. `pip` is the **P**ackage **I**nstaller for **P**ython.
 
