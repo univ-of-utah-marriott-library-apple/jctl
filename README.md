@@ -13,6 +13,25 @@ Along with `jctl` there are a few other tools that utilize `jctl` and `python-ja
 
 For more information on how [python-jamf](https://github.com/univ-of-utah-marriott-library-apple/python-jamf) works, please visit the Github page.
 
+## Quick Start
+
+###Installing
+
+ - Install Module & Requirements: `sudo pip3 install jctl`
+ - On your Jamf Pro server create a Jamf Pro API User
+ - Config: `conf-python-jamf`
+ - Enter hostname, username, and password
+ - Test: `conf-python-jamf -t`
+
+###Uninstalling
+
+Uninstalling `jctl` is easy if you installed it via `pip`. `pip` is the **P**ackage **I**nstaller for **P**ython.
+
+To uninstall `jctl` run the following command:
+
+```bash
+sudo pip3 uninstall jctl
+```
 
 ## Getting Help
 
@@ -32,14 +51,6 @@ If you have additional questions, or need more help getting started, post a ques
 <p align="center">
 <img src="https://github.com/univ-of-utah-marriott-library-apple/python-jamf/wiki/images/MacAdmins_Slack_logo.png" alt="MacAdmin's Slack Logo">
 </p>
-
-### Virtual JNUC 2021 Presentation
-
-We presented on `python-jamf` and `jctl` at the the Virtual JNUC 2021 on Thursday, Oct 21 at 1:00 PM - 1:30 PM MDT, titled [Turn 1000 clicks into 1 with python-jamf and jctl](https://reg.jamf.com/flow/jamf/jnuc2021/sessioncatalog/page/sessioncatalog/session/1620431676367001smXi). The presentation [video](https://reg.jamf.com/flow/jamf/jnuc2021/sessioncatalog/page/sessioncatalog/session/1620431676367001smXi) & [slides](https://github.com/univ-of-utah-marriott-library-apple/python-jamf/wiki/images/virtual_jnuc_2021-turn_1000_clicks_into_1_with_python-jamf_and_jctl.pdf) are available.
-
-Since 2010, Apple IT, users, and InfoSec leaders from around the world have rallied at the Jamf Nation User Conference (JNUC) for community presentations, deep-dive education sessions, and expert product insights. Focusing on new and better ways to connect, manage and protect Apple devices that simplify workflows for IT and InfoSec and keep users productive. The Virtual JNUC 2021 experience will be October 19 - October 21, 2021, and there will be no cost to attend the online keynote and sessions.
-
-Anyone and everyone is invited to register for the [virtual experience](https://reg.jamf.com/flow/jamf/jnuc2021/reg/login).
 
 #### What are `python-jamf` and `jctl`?
 
