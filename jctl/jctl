@@ -168,8 +168,17 @@ class Parser:
             exit(1)
         check_version()
         if args.record == None:
-            print("Please specify a record type:" + ', '.join(self.valid_jamf_records))
+            print("Please specify a record type:\n - " + '\n - '.join(self.valid_jamf_records))
             exit()
+        try:
+            self.record = jamf.records.class_name(args.record, case_sensitive=False)
+        except jamf.records.JamfError as e:
+            print(f"error: {e.message}", file=sys.stderr)
+            print("Please specify a valid record type:\n - " + '\n - '.join(self.valid_jamf_records))
+            exit(1)
+        if args.record == None:
+            print("Please specify a record type:\n - " + '\n - '.join(self.valid_jamf_records))
+            exit(1)
         flags = 0
         if args.delete:
             flags += 1
@@ -182,7 +191,7 @@ class Parser:
         if flags > 1:
             print("Can not do any of these actions together: delete, create, "
                   "sub-command, or update.")
-            exit()
+            exit(1)
         if args.sub_command:
             plural_cls = jamf.records.class_name(args.record, case_sensitive=False)
             singlar_cls = plural_cls.singular_class
@@ -242,7 +251,7 @@ class Parser:
                 print("If you want to update/delete records without "
                       "confirmation you must also specify "
                       "--use-the-force-luke.")
-                exit()
+                exit(1)
 
         # Process the update parameters to validate them before proceeding.
         if args.update:
