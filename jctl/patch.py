@@ -33,10 +33,10 @@ $> update_patch.py -p 72.0 firefox_72.0_2020.01.08_rcg.pkg \
 
 """
 
-__author__ = 'Sam Forester'
-__email__ = 'sam.forester@utah.edu'
-__copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library'
-__license__ = 'MIT'
+__author__ = "Sam Forester"
+__email__ = "sam.forester@utah.edu"
+__copyright__ = "Copyright (c) 2020 University of Utah, Marriott Library"
+__license__ = "MIT"
 __version__ = "1.0.4"
 min_jamf_version = "0.6.9"
 
@@ -48,68 +48,116 @@ import pathlib
 import argparse
 
 import jamf
-#import jamf.admin
+
+# import jamf.admin
 from jamf.package import Package
-#import jamf.config
+
+# import jamf.config
 
 
 class Parser:
-
     def __init__(self):
         self.parser = argparse.ArgumentParser()
 
-        desc = 'see `%(prog)s COMMAND --help` for more information'
-        self.subparsers = self.parser.add_subparsers(title='COMMANDS',
-                                                     dest='cmd',
-                                                     description=desc)
+        desc = "see `%(prog)s COMMAND --help` for more information"
+        self.subparsers = self.parser.add_subparsers(
+            title="COMMANDS", dest="cmd", description=desc
+        )
         # listing
-        list = self.subparsers.add_parser('list', help='without arguments, lists all names of all SoftwareTitles',
-                                          description="list patch info")
-        list.add_argument('-v', '--versions', action='store_true',
-                          help='list SoftwareTitle versions and packages for NAME')
-        list.add_argument('-P', '--patches', action='store_true',
-                          help='list patch policies current versions for SoftwareTitle NAME')
-        list.add_argument('-p', '--pkgs', action='store_true',
-                          help='list jss packages starting with NAME (or all if no NAME)')
-        list.add_argument('name', metavar='NAME', action='store', nargs='?',
-                          help='contextual name specification')
-        list.add_argument('-i', '--ids', action='store_true',
-                          help='list all Policies with IDs')
+        list = self.subparsers.add_parser(
+            "list",
+            help="without arguments, lists all names of all SoftwareTitles",
+            description="list patch info",
+        )
+        list.add_argument(
+            "-v",
+            "--versions",
+            action="store_true",
+            help="list SoftwareTitle versions and packages for NAME",
+        )
+        list.add_argument(
+            "-P",
+            "--patches",
+            action="store_true",
+            help="list patch policies current versions for SoftwareTitle NAME",
+        )
+        list.add_argument(
+            "-p",
+            "--pkgs",
+            action="store_true",
+            help="list jss packages starting with NAME (or all if no NAME)",
+        )
+        list.add_argument(
+            "name",
+            metavar="NAME",
+            action="store",
+            nargs="?",
+            help="contextual name specification",
+        )
+        list.add_argument(
+            "-i", "--ids", action="store_true", help="list all Policies with IDs"
+        )
 
         # updating
-        update = self.subparsers.add_parser('update', help='update patch',
-                                            description="update patch software titles and policies")
-        update.add_argument('-p', '--pkg', nargs=2,
-                            metavar=("ver", "pkg"),
-                            default=[], action='append',
-                            help='update package for SoftwareTitle version')
-        update.add_argument('-t', '--tech', action='store',
-                            metavar='ver',
-                            help='specify version of Tech')
-        update.add_argument('-g', '--guinea-pig', action='store',
-                            metavar='ver',
-                            help='specify version of Guinea Pigs')
-        update.add_argument('-s', '--stable', action='store',
-                            metavar='ver',
-                            help='specify version of Stable')
-        update.add_argument('name', metavar='NAME', help='name of SoftwareTitles')
+        update = self.subparsers.add_parser(
+            "update",
+            help="update patch",
+            description="update patch software titles and policies",
+        )
+        update.add_argument(
+            "-p",
+            "--pkg",
+            nargs=2,
+            metavar=("ver", "pkg"),
+            default=[],
+            action="append",
+            help="update package for SoftwareTitle version",
+        )
+        update.add_argument(
+            "-t",
+            "--tech",
+            action="store",
+            metavar="ver",
+            help="specify version of Tech",
+        )
+        update.add_argument(
+            "-g",
+            "--guinea-pig",
+            action="store",
+            metavar="ver",
+            help="specify version of Guinea Pigs",
+        )
+        update.add_argument(
+            "-s",
+            "--stable",
+            action="store",
+            metavar="ver",
+            help="specify version of Stable",
+        )
+        update.add_argument("name", metavar="NAME", help="name of SoftwareTitles")
 
         # information
-        info = self.subparsers.add_parser('info', help='get info about packages',
-                                          description="get info need for patch definitions")
-        info.add_argument('path', metavar='PACKAGE', help='path to package')
+        info = self.subparsers.add_parser(
+            "info",
+            help="get info about packages",
+            description="get info need for patch definitions",
+        )
+        info.add_argument("path", metavar="PACKAGE", help="path to package")
 
         # upload packages
-        upload = self.subparsers.add_parser('upload', help='upload packages',
-                                            description="upload a package")
-        upload.add_argument('path', metavar='PACKAGE', help='path to package')
-        upload.add_argument('-f', '--force', action='store_true',
-                            help='force package re-upload')
+        upload = self.subparsers.add_parser(
+            "upload", help="upload packages", description="upload a package"
+        )
+        upload.add_argument("path", metavar="PACKAGE", help="path to package")
+        upload.add_argument(
+            "-f", "--force", action="store_true", help="force package re-upload"
+        )
 
         # remove packages
-        remove = self.subparsers.add_parser('remove', help='remove packages',
-                                            description="remove a package")
-        remove.add_argument('name', metavar='PACKAGE', help='name of package')
+        remove = self.subparsers.add_parser(
+            "remove", help="remove packages", description="remove a package"
+        )
+        remove.add_argument("name", metavar="PACKAGE", help="name of package")
         # upload.add_argument('-f', '--force', help='force package re-upload')
 
     def parse(self, argv):
@@ -119,12 +167,16 @@ class Parser:
         """
         return self.parser.parse_args(argv)
 
+
 def check_version():
     python_jamf_version = jamf.version.jamf_version_up_to(min_jamf_version)
     if python_jamf_version != min_jamf_version:
-        print(f"patch.py requires python-jamf {min_jamf_version} or newer. "
-              f"You have {python_jamf_version}.")
+        print(
+            f"patch.py requires python-jamf {min_jamf_version} or newer. "
+            f"You have {python_jamf_version}."
+        )
         exit()
+
 
 def print_version_key_list(versions):
     """
@@ -154,68 +206,68 @@ def print_version_key_list(versions):
 
 
 def list_softwaretitles(api, name=None):
-    p = api.get('patchsoftwaretitles')
-    titles = p['patch_software_titles']['patch_software_title']
+    p = api.get("patchsoftwaretitles")
+    titles = p["patch_software_titles"]["patch_software_title"]
     if name:
         # only names that start with name (case-sensitive)
-        result = [x['name'] for x in titles if x['name'].startswith(name)]
+        result = [x["name"] for x in titles if x["name"].startswith(name)]
     else:
         # all names
-        result = [x['name'] for x in titles]
+        result = [x["name"] for x in titles]
     # print sorted list of resulting Patch SoftwareTitle names
     for n in sorted(result):
         print(n)
 
 
 def list_packages(api, name=None):
-    p = api.get('packages')
-    pkgs = p['packages']['package']
+    p = api.get("packages")
+    pkgs = p["packages"]["package"]
     if name:
         # only names that start with name (case-sensitive)
-        result = [x['name'] for x in pkgs if x['name'].lower().startswith(name.lower())]
+        result = [x["name"] for x in pkgs if x["name"].lower().startswith(name.lower())]
     else:
         # all names
-        result = [x['name'] for x in pkgs]
+        result = [x["name"] for x in pkgs]
     # print sorted list of resulting Patch SoftwareTitle names
     for n in sorted(result):
         print(n)
 
 
 def list_policies_ids(api, name):
-    p = api.get('policies')
-    pls = p['policies']['policy']
-    ids = [x['id'] for x in pls]
-    id_name = [x['name'] for x in pls]
-    return(ids, id_name)
+    p = api.get("policies")
+    pls = p["policies"]["policy"]
+    ids = [x["id"] for x in pls]
+    id_name = [x["name"] for x in pls]
+    return (ids, id_name)
 
 
 def print_policies_ids(api, name):
     (ids, id_name) = list_policies_ids(api, name)
     for b in range(len(ids)):
-        #print(b)
+        # print(b)
         print("ID: " + ids[b] + " Name: " + id_name[b])
 
 
 def list_softwaretitle_versions(api, name):
-    title = find_softwaretitle(api, name)['patch_software_title']
+    title = find_softwaretitle(api, name)["patch_software_title"]
     versions = []
     # get each version and assoiciated package (if one)
-    for version in title['versions']['version']:
-        v = version['software_version']
+    for version in title["versions"]["version"]:
+        v = version["software_version"]
         # {name of pkg} or '-'
-        p = version['package']['name'] if version['package'] else '-'
+        p = version["package"]["name"] if version["package"] else "-"
         versions.append((v, p))
     # print formatted result
     print_version_key_list(versions)
 
 
 def list_softwaretitle_policy_versions(api, name):
-    jssid = find_softwaretitle(api, name, details=False)['id']
+    jssid = find_softwaretitle(api, name, details=False)["id"]
     versions = []
     for patch in softwaretitle_policies(api, jssid):
         p = api.get(f"patchpolicies/id/{patch['id']}")
-        version = p['patch_policy']['general']['target_version']
-        versions.append((version, patch['name']))
+        version = p["patch_policy"]["general"]["target_version"]
+        versions.append((version, patch["name"]))
     # print formatted result
     print_version_key_list(versions)
 
@@ -231,13 +283,13 @@ def find_softwaretitle(api, name, details=True):
     logger = logging.getLogger(__name__)
     logger.debug(f"looking for existing software title: {name}")
     # Iterate all Patch Management Titles for specified matching name
-    data = api.get('patchsoftwaretitles')['patch_software_titles']
-    for title in data['patch_software_title']:
-        if title['name'] == name:
+    data = api.get("patchsoftwaretitles")["patch_software_titles"]
+    for title in data["patch_software_title"]:
+        if title["name"] == name:
             logger.debug(f"found title: {name!r}")
             if details:
                 logger.debug("returning detailed title info")
-                jssid = title['id']
+                jssid = title["id"]
                 return api.get(f"patchsoftwaretitles/id/{jssid}")
             else:
                 logger.debug("returning simple title info")
@@ -250,7 +302,7 @@ def softwaretitle_policies(api, jssid):
     :returns: list of software title patch policies
     """
     endpoint = f"patchpolicies/softwaretitleconfig/id/{jssid}"
-    return api.get(endpoint)['patch_policies']['patch_policy']
+    return api.get(endpoint)["patch_policies"]["patch_policy"]
 
 
 def update_softwaretitle_versions(api, name, versions, pkgs=None):
@@ -263,7 +315,7 @@ def update_softwaretitle_versions(api, name, versions, pkgs=None):
     :returns:
     """
     logger = logging.getLogger(__name__)
-    jssid = find_softwaretitle(api, name, details=False)['id']
+    jssid = find_softwaretitle(api, name, details=False)["id"]
 
     if pkgs:
         update_softwaretitle_packages(api, jssid, pkgs)
@@ -271,9 +323,9 @@ def update_softwaretitle_versions(api, name, versions, pkgs=None):
     for p in softwaretitle_policies(api, jssid):
         # 'Tech - Test Boxes - Keynote' -> 'Tech'
         # 'Guinea Pig - Lab - Xcode' -> 'Guinea Pig'
-        branch = p['name'].split(' - ')[0]
+        branch = p["name"].split(" - ")[0]
         try:
-            update_patch_policy_version(api, p['id'], versions[branch])
+            update_patch_policy_version(api, p["id"], versions[branch])
         except KeyError:
             logger.debug(f"skipping: {p['name']!r}")
 
@@ -284,12 +336,12 @@ def update_patch_policy_version(api, jssid, version):
     """
     logger = logging.getLogger(__name__)
     current = api.get(f"patchpolicies/id/{jssid}")
-    current_version = current['patch_policy']['general']['target_version']
-    name = current['patch_policy']['general']['name']
+    current_version = current["patch_policy"]["general"]["target_version"]
+    name = current["patch_policy"]["general"]["name"]
 
     if current_version != version:
         logger.info(f"updating: {name!r}: {version}")
-        data = {'patch_policy': {'general': {'target_version': version}}}
+        data = {"patch_policy": {"general": {"target_version": version}}}
         api.put(f"patchpolicies/id/{jssid}", data)
     else:
         logger.debug(f"already updated: {name}: {version}")
@@ -307,27 +359,27 @@ def update_softwaretitle_packages(api, jssid, pkgs):
     logger = logging.getLogger(__name__)
 
     data = api.get(f"patchsoftwaretitles/id/{jssid}")
-    title = data['patch_software_title']
+    title = data["patch_software_title"]
 
-    title_name = title['name']
+    title_name = title["name"]
     logger.info(f"updating patch software title: {title_name} ({jssid})")
 
     # single version (dict), multiple versions (list)
-    version = title['versions']['version']
+    version = title["versions"]["version"]
     _modified = False
     try:
         # access key of single version and count on TypeError being raised
-        v = version['software_version']
+        v = version["software_version"]
         if v in pkgs.keys():
-            version['package'] = {'name': pkgs[v]}
+            version["package"] = {"name": pkgs[v]}
             _modified = True
 
     except TypeError:
         # looks like it was actually a list
         for _version in version:
-            v = _version['software_version']
+            v = _version["software_version"]
             if v in pkgs.keys():
-                _version['package'] = {'name': pkgs[v]}
+                _version["package"] = {"name": pkgs[v]}
                 _modified = True
 
     if _modified:
@@ -340,7 +392,7 @@ def update_softwaretitle_packages(api, jssid, pkgs):
 
 def package_notes(path):
     path = pathlib.Path(path)
-    *name, ver, date, author = path.stem.split('_')
+    *name, ver, date, author = path.stem.split("_")
     return f"{date}, {author.upper()}"
 
 
@@ -351,7 +403,7 @@ def main(argv):
 
     api = jamf.API()
 
-    if args.cmd == 'list':
+    if args.cmd == "list":
         if args.versions:
             # `patch.py list --versions NAME`
             if not args.name:
@@ -372,12 +424,10 @@ def main(argv):
             # `patch.py list`
             list_softwaretitles(api, args.name)
 
-    elif args.cmd == 'update':
+    elif args.cmd == "update":
         # update patch software titles and/or patch policies
-        v = {'Tech': args.tech,
-             'Guinea Pig': args.guinea_pig,
-             'Stable': args.stable}
-        versions = {k:v for k, v in v.items() if v}
+        v = {"Tech": args.tech, "Guinea Pig": args.guinea_pig, "Stable": args.stable}
+        versions = {k: v for k, v in v.items() if v}
         pkgs = {x[0]: x[1] for x in args.pkg}
 
         logger.debug(f"NAME: {args.name}")
@@ -386,17 +436,17 @@ def main(argv):
 
         update_softwaretitle_versions(api, args.name, versions, pkgs)
 
-    elif args.cmd == 'info':
+    elif args.cmd == "info":
         pprint.pprint(Package(args.path).apps)
 
-    elif args.cmd == 'upload':
+    elif args.cmd == "upload":
         pkg = Package(args.path)
         # try:
         #     info = pkg.info
         # except Exception:
         #     raise SystemExit(f"invalid package: {args.path!r}")
         admin = jamf.admin.JamfAdmin()
-        #admin = jamf.Admin()
+        # admin = jamf.Admin()
         try:
             uploaded = admin.add(pkg)
         except jamf.admin.DuplicatePackageError as e:
@@ -405,7 +455,7 @@ def main(argv):
             uploaded = admin.find(pkg.name)
         admin.update(uploaded, notes=package_notes(uploaded.path))
 
-    elif args.cmd == 'remove':
+    elif args.cmd == "remove":
         path = pathlib.Path(args.name)
         if path.name != str(path):
             raise SystemExit("must specify package name not path")
@@ -418,9 +468,8 @@ def main(argv):
             admin.delete(pkg)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     check_version()
-    fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
+    fmt = "%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s"
     logging.basicConfig(level=logging.INFO, format=fmt)
     main(sys.argv[1:])
