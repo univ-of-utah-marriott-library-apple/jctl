@@ -79,10 +79,10 @@ Set a version for PatchPoliciy
 """
 
 
-__author__ = 'James Reynolds, Sam Forester'
-__email__ = 'reynolds@biology.utah.edu, sam.forester@utah.edu'
-__copyright__ = 'Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences'
-__license__ = 'MIT'
+__author__ = "James Reynolds, Sam Forester"
+__email__ = "reynolds@biology.utah.edu, sam.forester@utah.edu"
+__copyright__ = "Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences"
+__license__ = "MIT"
 __version__ = "1.1.13"
 min_jamf_version = "0.6.9"
 
@@ -103,52 +103,86 @@ class Parser:
         self.valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
         self.parser = argparse.ArgumentParser()
         # https://docs.python.org/3/library/argparse.html
-        self.parser.add_argument('-C', '--config', help='path to config file')
-        self.parser.add_argument('-v', '--version', action='store_true',
-            help='print version and exit')
-        self.parser.add_argument('record', nargs='?',
-            help='Valid Jamf Records are: '+
-            ', '.join(self.valid_jamf_records))
-        self.parser.add_argument('-n', '--name', nargs='*',
-            help='Search for exact name match')
-        self.parser.add_argument('-r', '--regex', nargs='*',
-            help='Search for regular expression matches')
-        self.parser.add_argument('-i', '--id', nargs='*',
-            help='Search for id matches')
-        self.parser.add_argument('-s', '--searchpath', action='append',
-            help='Search for a path (e.g. \'-s general/id==152\'')
+        self.parser.add_argument("-C", "--config", help="path to config file")
+        self.parser.add_argument(
+            "-v", "--version", action="store_true", help="print version and exit"
+        )
+        self.parser.add_argument(
+            "record",
+            nargs="?",
+            help="Valid Jamf Records are: " + ", ".join(self.valid_jamf_records),
+        )
+        self.parser.add_argument(
+            "-n", "--name", nargs="*", help="Search for exact name match"
+        )
+        self.parser.add_argument(
+            "-r", "--regex", nargs="*", help="Search for regular expression matches"
+        )
+        self.parser.add_argument("-i", "--id", nargs="*", help="Search for id matches")
+        self.parser.add_argument(
+            "-s",
+            "--searchpath",
+            action="append",
+            help="Search for a path (e.g. '-s general/id==152'",
+        )
         # Print options
-        self.parser.add_argument('-l', '--long', action='store_true',
-            help='List long format')
-        self.parser.add_argument('-j', '--json', action='store_true',
-            help='Print json (for pretty pipe to `prettier --parser json`)')
-        self.parser.add_argument('--quiet-as-a-mouse', action='store_true',
-            help='Don\'t print anything')
+        self.parser.add_argument(
+            "-l", "--long", action="store_true", help="List long format"
+        )
+        self.parser.add_argument(
+            "-j",
+            "--json",
+            action="store_true",
+            help="Print json (for pretty pipe to `prettier --parser json`)",
+        )
+        self.parser.add_argument(
+            "--quiet-as-a-mouse", action="store_true", help="Don't print anything"
+        )
         # Path
-        self.parser.add_argument('-p', '--path', action='append',
-            help='Print out path (e.g. \'-p general -p serial_number\')')
+        self.parser.add_argument(
+            "-p",
+            "--path",
+            action="append",
+            help="Print out path (e.g. '-p general -p serial_number')",
+        )
 
         # Actions
-        self.parser.add_argument('-d', '--delete', action='store_true',
-            help='Delete jamf record')
-        self.parser.add_argument('-c', '--create', nargs='*',
-            help='Create jamf record (e.g. \'-n <rec_name> [other]\')')
-        self.parser.add_argument('-u', '--update', action='append',
-            help='Update jamf record (e.g. \'-u general={} -u name=123\')')
-        self.parser.add_argument('--use-the-force-luke', action='store_true',
-            help="Don't ask to delete. DANGER! This can delete everything!")
-        self.parser.add_argument('--andele-andele', action='store_true',
+        self.parser.add_argument(
+            "-d", "--delete", action="store_true", help="Delete jamf record"
+        )
+        self.parser.add_argument(
+            "-c",
+            "--create",
+            nargs="*",
+            help="Create jamf record (e.g. '-n <rec_name> [other]')",
+        )
+        self.parser.add_argument(
+            "-u",
+            "--update",
+            action="append",
+            help="Update jamf record (e.g. '-u general={} -u name=123')",
+        )
+        self.parser.add_argument(
+            "--use-the-force-luke",
+            action="store_true",
+            help="Don't ask to delete. DANGER! This can delete everything!",
+        )
+        self.parser.add_argument(
+            "--andele-andele",
+            action="store_true",
             help="Don't pause 3 seconds when updating or deleting without "
-                 "confirmation. DANGER! This can delete everything FAST!")
+            "confirmation. DANGER! This can delete everything FAST!",
+        )
 
         # Sub commands
-        self.parser.add_argument('-S', '--sub-command', nargs='+',
-            help='Execute subcommand for record')
+        self.parser.add_argument(
+            "-S", "--sub-command", nargs="+", help="Execute subcommand for record"
+        )
 
     def str_to_json(self, value_):
         try:
             json_dump_ = json.dumps(ast.literal_eval(value_))
-        except: # SyntaxError  ValueError
+        except:  # SyntaxError  ValueError
             try:
                 json_dump_ = json.dumps(value_)
             except ValueError:
@@ -163,21 +197,30 @@ class Parser:
         """
         args = self.parser.parse_args(argv)
         if args.version:
-            print("jctl "+__version__)
+            print("jctl " + __version__)
             print(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
             exit(1)
         check_version()
         if args.record == None:
-            print("Please specify a record type:\n - " + '\n - '.join(self.valid_jamf_records))
+            print(
+                "Please specify a record type:\n - "
+                + "\n - ".join(self.valid_jamf_records)
+            )
             exit()
         try:
             self.record = jamf.records.class_name(args.record, case_sensitive=False)
         except jamf.records.JamfError as e:
             print(f"error: {e.message}", file=sys.stderr)
-            print("Please specify a valid record type:\n - " + '\n - '.join(self.valid_jamf_records))
+            print(
+                "Please specify a valid record type:\n - "
+                + "\n - ".join(self.valid_jamf_records)
+            )
             exit(1)
         if args.record == None:
-            print("Please specify a record type:\n - " + '\n - '.join(self.valid_jamf_records))
+            print(
+                "Please specify a record type:\n - "
+                + "\n - ".join(self.valid_jamf_records)
+            )
             exit(1)
         flags = 0
         if args.delete:
@@ -189,8 +232,10 @@ class Parser:
         if args.update:
             flags += 1
         if flags > 1:
-            print("Can not do any of these actions together: delete, create, "
-                  "sub-command, or update.")
+            print(
+                "Can not do any of these actions together: delete, create, "
+                "sub-command, or update."
+            )
             exit(1)
         if args.sub_command:
             plural_cls = jamf.records.class_name(args.record, case_sensitive=False)
@@ -198,32 +243,36 @@ class Parser:
             sub_c = args.sub_command[0]
             # Validate
             if not hasattr(plural_cls, "sub_commands"):
-                print(args.record+" has no subcommands.")
+                print(args.record + " has no subcommands.")
                 exit(1)
             if not sub_c in plural_cls.sub_commands:
-                print(f"{args.record} does not have subcommand: "
-                      f"{args.sub_command[0]}. Valid subcommands are:")
+                print(
+                    f"{args.record} does not have subcommand: "
+                    f"{args.sub_command[0]}. Valid subcommands are:"
+                )
                 kys = plural_cls.sub_commands.keys()
-                print("  "+"\n  ".join(str(key) for key in kys))
+                print("  " + "\n  ".join(str(key) for key in kys))
                 exit(1)
-            args_c = plural_cls.sub_commands[sub_c]['required_args']
-            args_d = plural_cls.sub_commands[sub_c]['args_description']
-            if len(args.sub_command)-1 != args_c:
-                print(f"{args.record} {args.sub_command[0]} requires {args_c} arg(s), "
-                      f"{args_d}")
+            args_c = plural_cls.sub_commands[sub_c]["required_args"]
+            args_d = plural_cls.sub_commands[sub_c]["args_description"]
+            if len(args.sub_command) - 1 != args_c:
+                print(
+                    f"{args.record} {args.sub_command[0]} requires {args_c} arg(s), "
+                    f"{args_d}"
+                )
                 exit(1)
             # Save data
             args.sub_command = {
-                'attr': sub_c,
-                'args': args.sub_command[1:],
+                "attr": sub_c,
+                "args": args.sub_command[1:],
             }
             # Get methods
             method_found = False
-            args.sub_command['when_to_run'] = {}
-            for when in ['print', 'update']:
-                for loop_when in ['before', 'during', 'after']:
+            args.sub_command["when_to_run"] = {}
+            for when in ["print", "update"]:
+                for loop_when in ["before", "during", "after"]:
                     method = sub_c + "_" + when + "_" + loop_when
-                    if loop_when == 'during':
+                    if loop_when == "during":
                         class_ptr = singlar_cls
                     else:
                         class_ptr = plural_cls
@@ -233,12 +282,14 @@ class Parser:
                             print(f"{args.record} subcommand {method} is broken...")
                             exit(1)
                         method_found = True
-                        args.sub_command[when+"_"+loop_when] = method
-                        args.sub_command['when_to_run'][when] = True
+                        args.sub_command[when + "_" + loop_when] = method
+                        args.sub_command["when_to_run"][when] = True
 
             if not method_found:
-                print(f"{args.record} subcommand {sub_c} has no valid methods. They "
-                      f"should look something like this: {sub_c}_print_during.")
+                print(
+                    f"{args.record} subcommand {sub_c} has no valid methods. They "
+                    f"should look something like this: {sub_c}_print_during."
+                )
                 exit(1)
         if args.quiet_as_a_mouse:
             if args.json:
@@ -248,9 +299,11 @@ class Parser:
                 print("Can't print long if quiet...")
                 exit()
             if (args.delete or args.update) and not args.use_the_force_luke:
-                print("If you want to update/delete records without "
-                      "confirmation you must also specify "
-                      "--use-the-force-luke.")
+                print(
+                    "If you want to update/delete records without "
+                    "confirmation you must also specify "
+                    "--use-the-force-luke."
+                )
                 exit(1)
 
         # Process the update parameters to validate them before proceeding.
@@ -263,17 +316,21 @@ class Parser:
                     update_processed_.append([update_parts_[1], value_])
                 else:
                     if not args.quiet_as_a_mouse:
-                        print(f'The update string "{update_string_}" requires a single "=".')
+                        print(
+                            f'The update string "{update_string_}" requires a single "=".'
+                        )
             args.update = update_processed_
         return args
 
 
 def check_version():
-	python_jamf_version = jamf.version.jamf_version_up_to(min_jamf_version)
-	if python_jamf_version != min_jamf_version:
-		print(f"jctl requires python-jamf {min_jamf_version} or newer. "
-		      f"You have {python_jamf_version}.")
-		exit()
+    python_jamf_version = jamf.version.jamf_version_up_to(min_jamf_version)
+    if python_jamf_version != min_jamf_version:
+        print(
+            f"jctl requires python-jamf {min_jamf_version} or newer. "
+            f"You have {python_jamf_version}."
+        )
+        exit()
 
 
 def confirm(_message):
@@ -338,12 +395,12 @@ def main(argv):
 
     # Are we making a change?
     if args.sub_command:
-        making_a_change = 'update' in args.sub_command['when_to_run']
+        making_a_change = "update" in args.sub_command["when_to_run"]
     else:
         making_a_change = args.delete or args.create or args.update
 
     if not args.quiet_as_a_mouse and making_a_change:
-        print("Server: "+api.url)
+        print("Server: " + api.url)
 
     # Quick filter records
     if all_records and (args.regex or args.name or args.id):
@@ -378,19 +435,19 @@ def main(argv):
     # Filtering is slow so print in the same loop for continual feedback
     filtered_results = []
 
-    if args.sub_command and 'print_before' in args.sub_command:
+    if args.sub_command and "print_before" in args.sub_command:
         method = getattr(rec_class, args.sub_command["print_before"])
-        method(rec_class, *args.sub_command['args'])
+        method(rec_class, *args.sub_command["args"])
 
     if args.json and not args.quiet_as_a_mouse:
         json_output = "["
     for record in sorted_results:
-       # Check to see if it's filtered
+        # Check to see if it's filtered
         not_filtered = True
         if args.searchpath:
             for searchpath in args.searchpath:
                 m = re.match("(.*)([=~!]=)(.*)", searchpath)
-                if (not_filtered and m):
+                if not_filtered and m:
                     path_data = record.get_path(m[1])
                     not_filtered = check_for_match(path_data, m[3], m[2])
                     if not not_filtered:
@@ -405,9 +462,9 @@ def main(argv):
             continue
 
         # Print feedback
-        if args.sub_command and 'print_during' in args.sub_command:
+        if args.sub_command and "print_during" in args.sub_command:
             method = getattr(rec_class.singular_class, args.sub_command["print_during"])
-            method(record, *args.sub_command['args'])
+            method(record, *args.sub_command["args"])
         else:
             if args.json:
                 print(json_output)
@@ -417,7 +474,7 @@ def main(argv):
                     for path_ in args.path:
                         json_output += json.dumps(record.get_path(path_))
                         json_output += ","
-                    json_output = json_output[:-1] # Remove the last comma
+                    json_output = json_output[:-1]  # Remove the last comma
                 else:
                     print(record)
                     for path_ in args.path:
@@ -428,7 +485,7 @@ def main(argv):
                             pprint(printme)
             elif args.long:
                 if args.json:
-                    json_output += json.dumps(record.data)+","
+                    json_output += json.dumps(record.data) + ","
                 else:
                     pprint(record.data)
             else:
@@ -441,16 +498,16 @@ def main(argv):
 
     if not args.quiet_as_a_mouse:
         if args.json:
-            json_output = json_output[:-1] # Remove the last comma
+            json_output = json_output[:-1]  # Remove the last comma
             print(json_output)
             print("]")
         else:
             if len(filtered_results) > 1:
-                print("Count: "+str(len(filtered_results)))
+                print("Count: " + str(len(filtered_results)))
 
-    if args.sub_command and 'print_after' in args.sub_command:
+    if args.sub_command and "print_after" in args.sub_command:
         method = getattr(rec_class, args.sub_command["print_after"])
-        method(rec_class, *args.sub_command['args'])
+        method(rec_class, *args.sub_command["args"])
 
     # Confirm Make a change
     confirmed = False
@@ -479,25 +536,31 @@ def main(argv):
                     print("Waiting 3 seconds.")
                     time.sleep(3)
             elif args.create:
-                confirmed = confirm(f"Are you sure you want to create a "
-                               f"{rec_class.singular_class.__name__} named "
-                               f"\"{args.create[0]}\" [y/n]? ")
+                confirmed = confirm(
+                    f"Are you sure you want to create a "
+                    f"{rec_class.singular_class.__name__} named "
+                    f'"{args.create[0]}" [y/n]? '
+                )
             elif args.update:
                 pprint(args.update)
-                confirmed = confirm(f"Are you sure you want to update "
-                               f"{len(filtered_results)} record(s) [y/n]? ")
+                confirmed = confirm(
+                    f"Are you sure you want to update "
+                    f"{len(filtered_results)} record(s) [y/n]? "
+                )
             else:
-                confirmed = confirm(f"Are you sure you want to {change_type_} "
-                               f"{len(filtered_results)} record(s) [y/n]? ")
+                confirmed = confirm(
+                    f"Are you sure you want to {change_type_} "
+                    f"{len(filtered_results)} record(s) [y/n]? "
+                )
     if confirmed and args.create:
         try:
             new_rec = rec_class().createNewRecord(args.create)
         except Exception as e:
             print(f"Couldn't create record: {e}")
     elif confirmed:
-        if args.sub_command and 'update_before' in args.sub_command:
+        if args.sub_command and "update_before" in args.sub_command:
             method = getattr(rec_class, args.sub_command["update_before"])
-            method(rec_class, *args.sub_command['args'])
+            method(rec_class, *args.sub_command["args"])
         # For each record
         for record in filtered_results:
             # Delete
@@ -533,9 +596,11 @@ def main(argv):
                 else:
                     print("Could not update record")
 
-            elif args.sub_command and 'update_during' in args.sub_command:
-                method = getattr(rec_class.singular_class, args.sub_command["update_during"])
-                success = method(record, *args.sub_command['args'])
+            elif args.sub_command and "update_during" in args.sub_command:
+                method = getattr(
+                    rec_class.singular_class, args.sub_command["update_during"]
+                )
+                success = method(record, *args.sub_command["args"])
                 if success:
                     try:
                         record.save()
@@ -544,15 +609,15 @@ def main(argv):
                 else:
                     print("Sub command failed")
 
-        if args.sub_command and 'update_after' in args.sub_command:
+        if args.sub_command and "update_after" in args.sub_command:
             method = getattr(rec_class, args.sub_command["update_after"])
-            method(rec_class, *args.sub_command['args'])
+            method(rec_class, *args.sub_command["args"])
 
 
-if __name__ == '__main__':
-    fmt = '%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s'
+if __name__ == "__main__":
+    fmt = "%(asctime)s: %(levelname)8s: %(name)s - %(funcName)s(): %(message)s"
     logging.basicConfig(level=logging.INFO, format=fmt)
     try:
         main(sys.argv[1:])
     except KeyboardInterrupt:
-            exit(1)
+        exit(1)
