@@ -42,6 +42,7 @@ sudo pip3 uninstall jctl
 ### Wiki
 
 #### More Documentation
+
 For further in-depth details please check out [the wiki](https://github.com/univ-of-utah-marriott-library-apple/jctl/wiki).
 
 #### Searching the wiki
