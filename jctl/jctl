@@ -3,79 +3,6 @@
 
 """
 Interact with Jamf Pro Server
-
-Examples:
-
-# List app policies
-
-    jctl policies
-
-Print policy name, category, and other trigger (as json)
-
-    jctl policies -p general/name -p general/category/name -p general/trigger_other -j
-
-Creates a package with the name zoom.pkg (package is named filename.pkg)
-
-    jctl packages -c zoom.pkg
-
-Sets the package filename (category needs to be set to blank for "No category assigned" or else it errors)
-
-    jctl packages -n zoom.pkg -u filename=zoom.pkg -u category=''
-
-Creates a policy
-
-    jctl policies -n "install zoom"
-
-Update policy package
-
-    jctl policies -r "install zoom" -u package_configuration/packages="{'package': {'name': 'zoom.pkg', 'action': 'Install'}}"
-
-Remove packages from all policies that match the regular expression "install zoom"
-
-    jctl policies -r "install zoom" -u package_configuration/packages="{}"
-
-If a package is already set, it can be changed like this:
-
-    jctl policies -r "install zoom" -u package_configuration/packages/package/name=zoom.pkg
-
-Update policy computer group
-
-    jctl policies -p general/name -p scope -s scope/computer_groups==None -s scope/departments==None -s scope/all_computers==false -s scope/computers==None -u scope/computer_groups="{'computer_group': {'id': '872', 'name': '01 -  Student, Staff, Opt-In'}}"
-
-Print a script (named msupdate.sh)
-
-    jctl scripts -n msupdate.sh -p script_contents
-
-Print a script that looks good (named msupdate.sh)
-
-    jctl scripts -n msupdate.sh -S script_contents
-
-Show all packages and the policies, patch, and groups they are included in.
-
-    jctl packages -S view_included
-
-View PatchSoftwareTitles patchpolicies
-
-    jctl patchsoftwaretitles -S patchpolicies
-
-View PatchSoftwareTitles packages
-
-    jctl patchsoftwaretitles -S packages
-
-Set the package for a version
-
-    jctl patchsoftwaretitles -S set_package_for_version
-
-Match PatchSoftwareTitles definition versions with packages named that fit the regex
-".*<name>-<version>.pkg".
-
-    jctl patchsoftwaretitles -S set_all_packages
-
-Set a version for PatchPoliciy
-
-    jctl patchpolicies -r Zoom -S set_version 5.6
-
-
 """
 
 
@@ -83,7 +10,7 @@ __author__ = "James Reynolds, Sam Forester"
 __email__ = "reynolds@biology.utah.edu, sam.forester@utah.edu"
 __copyright__ = "Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences"
 __license__ = "MIT"
-__version__ = "1.1.13"
+__version__ = "1.1.14"
 min_jamf_version = "0.6.9"
 
 
@@ -100,56 +27,18 @@ import time
 
 class Parser:
     def __init__(self):
+        example_text = "For examples please see https://github.com/univ-of-utah-marriott-library-apple/jctl/wiki/jctl"
+
         self.valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
-        self.parser = argparse.ArgumentParser()
+        self.parser = argparse.ArgumentParser(epilog=example_text)
         # https://docs.python.org/3/library/argparse.html
-        self.parser.add_argument("-C", "--config", help="path to config file")
-        self.parser.add_argument(
-            "-v", "--version", action="store_true", help="print version and exit"
-        )
         self.parser.add_argument(
             "record",
             nargs="?",
             help="Valid Jamf Records are: " + ", ".join(self.valid_jamf_records),
         )
-        self.parser.add_argument(
-            "-n", "--name", nargs="*", help="Search for exact name match"
-        )
-        self.parser.add_argument(
-            "-r", "--regex", nargs="*", help="Search for regular expression matches"
-        )
-        self.parser.add_argument("-i", "--id", nargs="*", help="Search for id matches")
-        self.parser.add_argument(
-            "-s",
-            "--searchpath",
-            action="append",
-            help="Search for a path (e.g. '-s general/id==152'",
-        )
-        # Print options
-        self.parser.add_argument(
-            "-l", "--long", action="store_true", help="List long format"
-        )
-        self.parser.add_argument(
-            "-j",
-            "--json",
-            action="store_true",
-            help="Print json (for pretty pipe to `prettier --parser json`)",
-        )
-        self.parser.add_argument(
-            "--quiet-as-a-mouse", action="store_true", help="Don't print anything"
-        )
-        # Path
-        self.parser.add_argument(
-            "-p",
-            "--path",
-            action="append",
-            help="Print out path (e.g. '-p general -p serial_number')",
-        )
 
         # Actions
-        self.parser.add_argument(
-            "-d", "--delete", action="store_true", help="Delete jamf record"
-        )
         self.parser.add_argument(
             "-c",
             "--create",
@@ -163,6 +52,53 @@ class Parser:
             help="Update jamf record (e.g. '-u general={} -u name=123')",
         )
         self.parser.add_argument(
+            "-d", "--delete", action="store_true", help="Delete jamf record"
+        )
+        self.parser.add_argument(
+            "-S", "--sub-command", nargs="+", help="Execute subcommand for record"
+        )
+
+        # Searching/filtering
+        self.parser.add_argument("-i", "--id", nargs="*", help="Search for id matches")
+        self.parser.add_argument(
+            "-n", "--name", nargs="*", help="Search for exact name match"
+        )
+        self.parser.add_argument(
+            "-r", "--regex", nargs="*", help="Search for regular expression matches"
+        )
+        self.parser.add_argument(
+            "-s",
+            "--searchpath",
+            action="append",
+            help="Search for a path (e.g. '-s general/id==152'",
+        )
+
+        # Print options
+        self.parser.add_argument(
+            "-l", "--long", action="store_true", help="List long format"
+        )
+        self.parser.add_argument(
+            "-p",
+            "--path",
+            action="append",
+            help="Print out path (e.g. '-p general -p serial_number')",
+        )
+        self.parser.add_argument(
+            "-j",
+            "--json",
+            action="store_true",
+            help="Print json (for pretty pipe to `prettier --parser json`)",
+        )
+        self.parser.add_argument(
+            "--quiet-as-a-mouse", action="store_true", help="Don't print anything"
+        )
+
+        # Others
+        self.parser.add_argument("-C", "--config", help="path to config file")
+        self.parser.add_argument(
+            "-v", "--version", action="store_true", help="print version and exit"
+        )
+        self.parser.add_argument(
             "--use-the-force-luke",
             action="store_true",
             help="Don't ask to delete. DANGER! This can delete everything!",
@@ -174,10 +110,6 @@ class Parser:
             "confirmation. DANGER! This can delete everything FAST!",
         )
 
-        # Sub commands
-        self.parser.add_argument(
-            "-S", "--sub-command", nargs="+", help="Execute subcommand for record"
-        )
 
     def str_to_json(self, value_):
         try:
