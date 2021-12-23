@@ -9,8 +9,8 @@ __author__ = "James Reynolds"
 __email__ = "reynolds@biology.utah.edu"
 __copyright__ = "Copyright (c) 2020 University of Utah, School of Biological Sciences"
 __license__ = "MIT"
-__version__ = "0.7"
-min_jamf_version = "0.6.9"
+__version__ = "0.8"
+min_jamf_version = "0.7.3"
 
 
 from pprint import pprint
@@ -29,9 +29,14 @@ class Parser:
         valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
         self.parser = argparse.ArgumentParser()
         # https://docs.python.org/3/library/argparse.html
-        self.parser.add_argument("-C", "--config", help="path to config file")
         self.parser.add_argument(
-            "-v", "--version", action="store_true", help="print version and exit"
+            "-c", "--cleanup", action="store_true", help="Show packages sorted by usage"
+        )
+        self.parser.add_argument(
+            "-p",
+            "--patch-definitions",
+            action="store_true",
+            help="Set patch definitions",
         )
         self.parser.add_argument(
             "-g",
@@ -43,27 +48,23 @@ class Parser:
             "-u", "--usage", action="store_true", help="Display package usage and exit"
         )
         self.parser.add_argument(
-            "-d", "--definitions", action="store_true", help="Set patch definitions"
-        )
-
-        self.parser.add_argument(
             "-a",
             "--auto-promote",
             nargs="*",
             help="Automatically update policies, groups, and patch policies that match "
             "supplied regular expression.",
         )
-
+        self.parser.add_argument("-i", "--id", nargs="*", help="Search for id matches")
         self.parser.add_argument(
             "-n", "--name", nargs="*", help="Search for exact name matches"
         )
         self.parser.add_argument(
             "-r", "--regex", nargs="*", help="Search for regular expression matches"
         )
-        self.parser.add_argument("-i", "--id", nargs="*", help="Search for id matches")
-
-    #         self.parser.add_argument('-u', '--upload', action='append',
-    #             help='Upload package')
+        self.parser.add_argument("-C", "--config", help="path to config file")
+        self.parser.add_argument(
+            "-v", "--version", action="store_true", help="print version and exit"
+        )
 
     def parse(self, argv):
         """
@@ -96,23 +97,31 @@ def confirm(_message):
     return answer == "y"
 
 
-def process_package_disassociation(package, item):
-    print("can't disassociate yet")
-    print()
-    return False
+def printWaitText():
+    if not hasattr(printWaitText, "printed"):
+        printWaitText.printed = True
+        print("Analyzing Jamf data")
 
 
-def process_package_promotion(package, item, packages):
+def loadRelatedData(packages):
+    printWaitText()
+    for record in packages:
+        record.related
+
+
+def process_package_promotion(item, packages):
+    package = item[2]
     while True:
         answer = ""
         choices = list(map(str, range(1, len(packages) + 1)))
         while answer not in choices + ["b", "x", "q"]:
-            print(f"Promote {item[1]} ({item[0]}) to which package?")
+            class_name = eval("jamf." + item[0]).singular_class.__name__
+            print(f"Set the {class_name} named {item[1]} to which package?")
             index = 1
             for val in packages:
                 print(f"  [{index}] {val}")
                 index += 1
-            answer = input("Number, [b]ack, or e[x]it/[q]uit: ").lower()
+            answer = input("Enter a number, [b]ack, or e[x]it/[q]uit: ").lower()
             print()
         if answer == "x" or answer == "q":
             exit()
@@ -122,7 +131,6 @@ def process_package_promotion(package, item, packages):
             new_package = packages[int(answer) - 1]
             the_class = jamf.records.class_name(item[0])
             rec = the_class().find(item[1])
-
             if item[0] == "PatchPolicies":
                 if "version" in new_package.metadata:
                     pkg_version = new_package.metadata["version"]
@@ -130,9 +138,10 @@ def process_package_promotion(package, item, packages):
                     print(f"Couldn't determine version for {new_package.name}")
                     return False
                 rec.data["general"]["target_version"] = pkg_version
-                del rec.data["user_interaction"]["self_service_icon"]
                 rec.save()
                 rec.refresh()
+                new_package.refresh_related()
+                print(f"Saved patch policiy named {item[1]}")
                 return True
             elif item[0] == "Policies":
                 temp_packages = rec.data["package_configuration"]["packages"]
@@ -146,7 +155,8 @@ def process_package_promotion(package, item, packages):
                         rec_package["name"] = new_package.name
                         rec.save()
                         rec.refresh()
-                        print("here2")
+                        package.refresh_related()
+                        print(f"Saved policy named {item[1]}")
                         return True
             elif item[0] == "ComputerGroups":
                 criteria = rec.data["criteria"]["criterion"]
@@ -158,112 +168,90 @@ def process_package_promotion(package, item, packages):
                     if crit["value"] == package.name:
                         crit["value"] = new_package.name
                         rec.save()
+                        rec.refresh()
+                        package.refresh_related()
+                        print(f"Saved computer group named {item[1]}")
                         return True
             return False
 
 
-def process_package_item(item, packages):
-    rectype = item[0]
-    rec = item[1]
-    package = item[2]
-    while True:
-        answer = ""
-        print(f"{rec} ({rectype})")
-        while answer not in ["d", "p", "b", "x", "q"]:
-            answer = input(
-                "[d]isassociate from package, [p]romote, [b]ack, e[x]it/[q]uit: "
-            ).lower()
-            print("")
-        if answer == "x" or answer == "q":
-            exit()
-        elif answer == "b":
-            return False
-        elif answer == "p":
-            result = process_package_promotion(package, item, packages)
-            if result:
-                return True
-        elif answer == "d":
-            result = process_package_disassociation(package, item)
-            if result:
-                return True
-
-
-def process_package(package, packages):
-    while True:
-        answer = ""
-        while answer not in ["b", "x", "d"]:
-            print(package.name)
-            answer = input("[d]elete package, [b]ack, or e[x]it/[q]uit: ").lower()
-            print("")
-        if answer == "x" or answer == "q":
-            exit()
-        elif answer == "b":
-            return False
-        elif answer == "d":
-            confirmed = confirm(
-                f"Are you sure you want to delete the package named {package.name} (this will not remove it from the JDS, only delete it from the database)? "
-            )
-            if confirmed:
-                package.delete()
-                return True
-
-
 def process_package_group(group, packages):
-    index = 1
-    items = []
-    for package in packages:
-        items.append(["Package", package])
-        index += 1
-        if "policies" in package.related:
-            for rec in package.related["policies"]:
-                items.append(["Policies", rec, package])
-                index += 1
-        if "groups" in package.related:
-            for rec in package.related["groups"]:
-                items.append(["ComputerGroups", rec, package])
-                index += 1
-        if "patchpolicies" in package.related:
-            for rec in package.related["patchpolicies"]:
-                items.append(["PatchPolicies", rec, package])
-                index += 1
     while True:
-        answer = ""
-        choices = list(map(str, range(1, index + 1)))
-        while answer not in choices + ["n", "x", "q"]:
-            print(group)
-
-            print(package.name)
-            for index, item in enumerate(items):
-                rectype = item[0]
-                rec = item[1]
-                lastrectype = ""
-                if rectype == "Package":
-                    if "patchsoftwaretitles" in rec.related:
-                        print(f"  [{index+1}] {rec}")
-                    else:
-                        print(f"  [{index+1}] {rec} [no patch defined]")
-                else:
-                    if rectype != lastrectype:
-                        print(f"     {rectype}")
-                        rectype = lastrectype
-                    print(f"       [{index+1}] {rec}")
-            answer = input("Number, [n]ext group, or e[x]it/[q]uit: ").lower()
-            print("")
-        if answer == "x" or answer == "q":
-            exit()
-        elif answer == "n":
-            return False
-
-        else:
-            item = items[int(answer) - 1]
-            if item[0] == "Package":
-                result = process_package(item[1], packages)
-                if result:
-                    item[1].refresh_related()
+        items = []
+        text = ""
+        for package in packages:
+            if "PatchSoftwareTitles" in package.related:
+                text += f"  {package}\n"
             else:
-                result = process_package_item(item, packages)
-                if result:
-                    return True
+                text += f"  {package} [no patch defined]\n"
+            if "Policies" in package.related:
+                for rec in package.related["Policies"]:
+                    items.append(["Policies", rec, package])
+                    text += f"      Policies\n        [{len(items)}] {rec}\n"
+            if "ComputerGroups" in package.related:
+                for rec in package.related["ComputerGroups"]:
+                    items.append(["ComputerGroups", rec, package])
+                    text += f"      ComputerGroups\n        [{len(items)}] {rec}\n"
+            if "PatchPolicies" in package.related:
+                for rec in package.related["PatchPolicies"]:
+                    items.append(["PatchPolicies", rec, package])
+                    text += f"      PatchPolicies\n        [{len(items)}] {rec}\n"
+        loop = True
+        while loop:
+            choices = list(map(str, range(1, len(items) + 1))) + ["b", "x", "q"]
+            answer = ""
+            while answer not in choices:
+                print(group)
+                print(text)
+                answer = input("Enter a number, [b]ack, or e[x]it/[q]uit: ").lower()
+            if answer == "x" or answer == "q":
+                exit()
+            elif answer == "b":
+                return False
+            else:
+                item = items[int(answer) - 1]
+                result = process_package_promotion(item, packages)
+                loop = False
+
+
+def print_groups(packages, related=False, group_index=False):
+    if related:
+        loadRelatedData(packages)
+    group_choices = []
+    pprint(packages.groups)
+    for group, children in packages.groups.items():
+        print_me = False
+        text = ""
+        if group_index:
+            if len(children) > 1:
+                group_choices.append(group)
+                text += f"[{len(group_choices)}] {group}\n"
+                print_me = True
+        else:
+            text += f"{group}\n"
+            print_me = True
+        if print_me:
+            for child in children:
+                text += f"  {child}"
+                if related:
+                    text += " - "
+                    if "PatchSoftwareTitles" in child.related:
+                        text += (
+                            f"patch {len(child.related['PatchSoftwareTitles'])}; "
+                        )
+                    if "Policies" in child.related:
+                        text += f"Policies {len(child.related['Policies'])}; "
+                    if "ComputerGroups" in child.related:
+                        text += (
+                            f"ComputerGroups {len(child.related['ComputerGroups'])}; "
+                        )
+                    if "PatchPolicies" in child.related:
+                        text += (
+                            f"PatchPolicies {len(child.related['PatchPolicies'])}; "
+                        )
+                text += "\n"
+            print(f"{text}")
+    return group_choices
 
 
 def main(argv):
@@ -280,7 +268,6 @@ def main(argv):
         api = jamf.API(config_path=args.config)
     else:
         api = jamf.API()
-
     all_packages = jamf.records.Packages()
     # Quick filter records
     if all_packages and (args.regex or args.name or args.id):
@@ -309,31 +296,25 @@ def main(argv):
         sorted_results = sorted(quick)
     else:
         sorted_results = []
-
     # Print package usage
     if args.usage:
-        print("Analyzing Jamf data...")
+        printWaitText()
         for record in sorted_results:
             record.usage_print_during()
         exit()
-
     # Generate groups
     for record in sorted_results:
         record.metadata
-
+    # Print package cleanup
+    if args.cleanup:
+        print_groups(all_packages, True)
+        exit()
     # Print package groups
     if args.groups:
-        for group, children in all_packages.groups.items():
-            print(group)
-            for child in children:
-                print(f"  {child}")
+        print_groups(all_packages)
         exit()
-
     # Set package definitions
-    update_definitions = False
-    #     if not args.definitions:
-    #         update_definitions = confirm(f"Do you want to update patch package definitions? ")
-    if args.definitions or update_definitions:
+    if args.patch_definitions:
         print("Updating patch definitions...")
         all_psts = jamf.records.PatchSoftwareTitles()
         change_made = False
@@ -344,13 +325,24 @@ def main(argv):
                 change_made = True
         if not change_made:
             print("No packages match patch software titles")
-        if args.definitions:
+        if args.patch_definitions:
             exit()
-
     # Interactive package manager
-    print("Analyzing Jamf data...")
-    for group, children in all_packages.groups.items():
-        process_package_group(group, children)
+    while True:
+        printWaitText()
+        loadRelatedData(all_packages)
+        group_choices = print_groups(all_packages, True, True)
+        choices = list(map(str, range(1, len(group_choices) + 1))) + ["q", "x"]
+        answer = ""
+        while answer not in choices:
+            answer = input("Enter a number, or e[x]it/[q]uit: ").lower()
+            print("")
+        if answer == "x" or answer == "q":
+            exit()
+        else:
+            group = group_choices[int(answer) - 1]
+            children = all_packages.groups[group]
+            process_package_group(group, children)
 
 
 if __name__ == "__main__":
