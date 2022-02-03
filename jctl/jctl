@@ -55,7 +55,7 @@ class Parser:
             "-d", "--delete", action="store_true", help="Delete jamf record"
         )
         self.parser.add_argument(
-            "-S", "--sub-command", nargs="+", help="Execute subcommand for record"
+            "-S", "--sub-command", nargs="*", help="Execute subcommand for record"
         )
 
         # Searching/filtering
@@ -169,14 +169,20 @@ class Parser:
                 "sub-command, or update."
             )
             exit(1)
-        if args.sub_command:
+        if args.sub_command != None:
             plural_cls = jamf.records.class_name(args.record, case_sensitive=False)
             singlar_cls = plural_cls.singular_class
-            sub_c = args.sub_command[0]
-            # Validate
+            # Validate the class has subcommands
             if not hasattr(plural_cls, "sub_commands"):
                 print(args.record + " has no subcommands.")
                 exit(1)
+            if len(args.sub_command) == 0:
+                print(f"{args.record} valid subcommands are:")
+                kys = plural_cls.sub_commands.keys()
+                print("  " + "\n  ".join(str(key) for key in kys))
+                exit(1)
+            # Validate the subcommand exists
+            sub_c = args.sub_command[0]
             if not sub_c in plural_cls.sub_commands:
                 print(
                     f"{args.record} does not have subcommand: "
@@ -185,6 +191,7 @@ class Parser:
                 kys = plural_cls.sub_commands.keys()
                 print("  " + "\n  ".join(str(key) for key in kys))
                 exit(1)
+            # Validate the arg count is correct
             args_c = plural_cls.sub_commands[sub_c]["required_args"]
             args_d = plural_cls.sub_commands[sub_c]["args_description"]
             if len(args.sub_command) - 1 != args_c:
@@ -216,7 +223,6 @@ class Parser:
                         method_found = True
                         args.sub_command[when + "_" + loop_when] = method
                         args.sub_command["when_to_run"][when] = True
-
             if not method_found:
                 print(
                     f"{args.record} subcommand {sub_c} has no valid methods. They "
