@@ -37,6 +37,16 @@ To uninstall `jctl` run the following command:
 sudo pip3 uninstall jctl
 ```
 
+### Upgrading
+
+Upgrading `jctl` is easy if you installed it via `pip`. `pip` is the **P**ackage **I**nstaller for **P**ython.
+
+To upgrade `jctl` run the following command:
+
+```bash
+sudo pip3 install --upgrade jctl
+```
+
 ## Getting Help
 
 ### Wiki
