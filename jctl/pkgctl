@@ -9,7 +9,7 @@ __author__ = "James Reynolds"
 __email__ = "reynolds@biology.utah.edu"
 __copyright__ = "Copyright (c) 2020 University of Utah, School of Biological Sciences"
 __license__ = "MIT"
-__version__ = "0.8"
+__version__ = "0.8.1"
 min_jamf_version = "0.7.3"
 
 
@@ -138,7 +138,12 @@ def process_package_promotion(item, packages):
                     print(f"Couldn't determine version for {new_package.name}")
                     return False
                 rec.data["general"]["target_version"] = pkg_version
-                rec.save()
+                try:
+                    rec.save()
+                except jamf.api.APIError as e:
+                    print(f"Error - {e}")
+                    print("This utility is no longer in sync with the Jamf,"
+                          " server. Continue only if you know what you're doing.")
                 rec.refresh()
                 new_package.refresh_related()
                 print(f"Saved patch policiy named {item[1]}")
@@ -153,7 +158,12 @@ def process_package_promotion(item, packages):
                     if rec_package["name"] == package.name:
                         del rec_package["id"]
                         rec_package["name"] = new_package.name
-                        rec.save()
+                        try:
+                            rec.save()
+                        except jamf.api.APIError as e:
+                            print(f"Error - {e}")
+                            print("This utility is no longer in sync with the Jamf,"
+                                  " server. Continue only if you know what you're doing.")
                         rec.refresh()
                         package.refresh_related()
                         print(f"Saved policy named {item[1]}")
@@ -167,7 +177,12 @@ def process_package_promotion(item, packages):
                 for crit in criteria:
                     if crit["value"] == package.name:
                         crit["value"] = new_package.name
-                        rec.save()
+                        try:
+                            rec.save()
+                        except jamf.api.APIError as e:
+                            print(f"Error - {e}")
+                            print("This utility is no longer in sync with the Jamf,"
+                                  " server. Continue only if you know what you're doing.")
                         rec.refresh()
                         package.refresh_related()
                         print(f"Saved computer group named {item[1]}")
