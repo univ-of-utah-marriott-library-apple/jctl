@@ -276,7 +276,7 @@ def main(argv):
     logger.debug(f"args: {args!r}")
     if args.version:
         print("jctl " + __version__)
-        print(f"python_jamf {jamf.__version__} ({min_jamf_version} required)")
+        print(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
         exit(1)
     check_version()
     if args.config:
