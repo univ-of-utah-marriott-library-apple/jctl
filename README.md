@@ -66,3 +66,13 @@ If you have additional questions, or need more help getting started, post a ques
 <p align="center">
 <img src="https://github.com/univ-of-utah-marriott-library-apple/python-jamf/wiki/images/MacAdmins_Slack_logo.png" alt="MacAdmin's Slack Logo">
 </p>
+
+## Latest Status
+
+### Releases
+
+:new: [jctl - 1.1.15](https://github.com/univ-of-utah-marriott-library-apple/jctl/releases/tag/1.1.15-a6bb5795)
+
+ - Version bump to 1.1.15
+
+See `jctl` [upgrade](https://github.com/univ-of-utah-marriott-library-apple/jctl/wiki/Installing#upgrading) documentation to upgrade to latest release.
