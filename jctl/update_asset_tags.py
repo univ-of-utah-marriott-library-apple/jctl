@@ -10,6 +10,7 @@ __license__ = "MIT"
 
 import csv
 import logging
+
 import jamf
 
 # create inventory lookup for each asset tag by serial number

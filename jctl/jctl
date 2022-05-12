@@ -14,15 +14,16 @@ __version__ = "1.1.15"
 min_jamf_version = "0.6.9"
 
 
-from pprint import pprint
 import argparse
 import ast
-import jamf
 import json
 import logging
 import re
 import sys
 import time
+from pprint import pprint
+
+import jamf
 
 
 class Parser:
