@@ -110,7 +110,6 @@ class Parser:
             "confirmation. DANGER! This can delete everything FAST!",
         )
 
-
     def str_to_json(self, value_):
         try:
             json_dump_ = json.dumps(ast.literal_eval(value_))
