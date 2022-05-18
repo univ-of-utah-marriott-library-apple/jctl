@@ -41,18 +41,14 @@ __version__ = "1.0.4"
 min_jamf_version = "0.6.9"
 
 
-import sys
-import logging
-import pprint
-import pathlib
 import argparse
+import logging
+import pathlib
+import pprint
+import sys
 
 import jamf
-
-# import jamf.admin
 from jamf.package import Package
-
-# import jamf.config
 
 
 class Parser:
