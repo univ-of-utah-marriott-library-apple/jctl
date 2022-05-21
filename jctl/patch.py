@@ -383,7 +383,7 @@ def update_softwaretitle_packages(api, jssid, pkgs):
         logger.info(f"succesfully updated: {title_name}")
         return result
     else:
-        logger.info(f"software title was not modified")
+        logger.info("software title was not modified")
 
 
 def package_notes(path):
