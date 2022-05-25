@@ -23,7 +23,6 @@ import jamf
 
 class Parser:
     def __init__(self):
-        valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
         self.parser = argparse.ArgumentParser()
         # https://docs.python.org/3/library/argparse.html
         self.parser.add_argument(
@@ -173,7 +172,6 @@ def process_package_promotion(item, packages):
                 criteria = rec.data["criteria"]["criterion"]
                 if not type(criteria) is list:
                     criteria = [criteria]
-                found = False
                 print(new_package.name)
                 for crit in criteria:
                     if crit["value"] == package.name:
@@ -228,7 +226,7 @@ def process_package_group(group, packages):
                 return False
             else:
                 item = items[int(answer) - 1]
-                result = process_package_promotion(item, packages)
+                _ = process_package_promotion(item, packages)
                 loop = False
 
 
@@ -278,10 +276,6 @@ def main(argv):
         print(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
         exit(1)
     check_version()
-    if args.config:
-        api = jamf.API(config_path=args.config)
-    else:
-        api = jamf.API()
     all_packages = jamf.records.Packages()
     # Quick filter records
     if all_packages and (args.regex or args.name or args.id):

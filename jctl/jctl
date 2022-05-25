@@ -313,7 +313,7 @@ def check_for_match(path_data, search, op):
         return op == "!="
 
 
-def main(argv):
+def main(argv):  # noqa: C901
     # THERE ARE EXITS THROUGHOUT
     logger = logging.getLogger(__name__)
     timmy = Parser()
@@ -492,7 +492,7 @@ def main(argv):
                 )
     if confirmed and args.create:
         try:
-            new_rec = rec_class().createNewRecord(args.create)
+            _ = rec_class().createNewRecord(args.create)
         except Exception as e:
             print(f"Couldn't create record: {e}")
     elif confirmed:
