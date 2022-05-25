@@ -133,7 +133,7 @@ class Parser:
             print(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
             exit(1)
         check_version()
-        if args.record == None:
+        if args.record is None:
             print(
                 "Please specify a record type:\n - "
                 + "\n - ".join(self.valid_jamf_records)
@@ -148,7 +148,7 @@ class Parser:
                 + "\n - ".join(self.valid_jamf_records)
             )
             exit(1)
-        if args.record == None:
+        if args.record is None:
             print(
                 "Please specify a record type:\n - "
                 + "\n - ".join(self.valid_jamf_records)
@@ -169,7 +169,7 @@ class Parser:
                 "sub-command, or update."
             )
             exit(1)
-        if args.sub_command != None:
+        if args.sub_command is not None:
             plural_cls = jamf.records.class_name(args.record, case_sensitive=False)
             singlar_cls = plural_cls.singular_class
             # Validate the class has subcommands
@@ -183,7 +183,7 @@ class Parser:
                 exit(1)
             # Validate the subcommand exists
             sub_c = args.sub_command[0]
-            if not sub_c in plural_cls.sub_commands:
+            if sub_c not in plural_cls.sub_commands:
                 print(
                     f"{args.record} does not have subcommand: "
                     f"{args.sub_command[0]}. Valid subcommands are:"
@@ -303,11 +303,11 @@ def check_for_match(path_data, search, op):
                 return True
             else:
                 return False
-    elif path_data == None and search == "None":
+    elif path_data is None and search == "None":
         return op == "==" or op == "~="
-    elif path_data == False and search == "False":
+    elif path_data is False and search == "False":
         return op == "==" or op == "~="
-    elif path_data == True and search == "True":
+    elif path_data is True and search == "True":
         return op == "==" or op == "~="
     else:
         return op == "!="
