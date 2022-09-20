@@ -147,11 +147,7 @@ def process_package_promotion(item, packages):
                 print(f"Saved patch policiy named {item[1]}")
                 return True
             elif item[0] == "Policies":
-                temp_packages = rec.data["package_configuration"]["packages"]
-                if int(temp_packages["size"]) > 1:
-                    rec_packages = temp_packages["package"]
-                else:
-                    rec_packages = [temp_packages["package"]]
+                rec_packages = rec.data["package_configuration"]["packages"]["package"]
                 for rec_package in rec_packages:
                     if rec_package["name"] == package.name:
                         del rec_package["id"]
