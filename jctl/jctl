@@ -11,7 +11,7 @@ __email__ = "reynolds@biology.utah.edu, sam.forester@utah.edu"
 __copyright__ = "Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences"
 __license__ = "MIT"
 __version__ = "1.1.15"
-min_jamf_version = "0.6.9"
+min_jamf_version = "0.8.0"
 
 
 import argparse
