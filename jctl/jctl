@@ -110,6 +110,11 @@ class Parser:
             help="Don't pause 3 seconds when updating or deleting without "
             "confirmation. DANGER! This can delete everything FAST!",
         )
+        self.parser.add_argument(
+            "--debug",
+            action="store_true",
+            help="Spew out lots of output",
+        )
 
     def str_to_json(self, value_):
         try:
@@ -321,6 +326,8 @@ def main(argv):  # noqa: C901
     logger = logging.getLogger(__name__)
     timmy = Parser()
     args = timmy.parse(argv)
+    if args.debug:
+        logger.setLevel(level=logging.DEBUG)
     logger.debug(f"args: {args!r}")
     if args.config:
         api = jamf.API(config_path=args.config)
