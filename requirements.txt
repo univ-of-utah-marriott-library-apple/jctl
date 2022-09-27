@@ -1,1 +1,1 @@
-python-jamf>=0.6.9
+python-jamf>=0.8.0
