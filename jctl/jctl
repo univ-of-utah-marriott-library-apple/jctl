@@ -412,7 +412,7 @@ def main(argv):  # noqa: C901
         if args.searchpath:
             for searchpath in args.searchpath:
                 m1 = re.match("(.*)(!=~)(.*)", searchpath)
-                m2 = re.match("(.*)([=~!]=|!=~)(.*)", searchpath)
+                m2 = re.match("(.*)([=!]=|=~|~=|!=~)(.*)", searchpath)
                 m = m1 if m1 else m2
                 if not_filtered and m:
                     path_data = record.get_path(m[1])
@@ -441,18 +441,21 @@ def main(argv):  # noqa: C901
                 else:
                     print(record.id)
             elif args.path:
+                temp = {}
+                for path_ in args.path:
+                    value = record.get_path(path_)
+                    if value is not None:
+                        temp[path_] = value
                 if args.json:
                     json_output += "{"
-                    for path_ in args.path:
-                        json_output += "\"" + path_ + "\": "
-                        json_output += json.dumps(record.get_path(path_))
-                        json_output += ","
-                    json_output = json_output[:-1]  # Remove the last comma
+                    if len(temp) > 0:
+                        for path_ in temp:
+                            json_output += "\"" + path_ + "\": "
+                            json_output += json.dumps(temp[path_])
+                            json_output += ","
+                        json_output = json_output[:-1]  # Remove the last comma
                     json_output += "},"
                 else:
-                    temp = {}
-                    for path_ in args.path:
-                        temp[path_] = record.get_path(path_)
                     pprint({record.name: temp})
             elif args.long:
                 if args.json:
