@@ -76,6 +76,9 @@ class Parser:
 
         # Print options
         self.parser.add_argument(
+            "-I", "--print-id", action="store_true", help="Print ID only"
+        )
+        self.parser.add_argument(
             "-l", "--long", action="store_true", help="List long format"
         )
         self.parser.add_argument(
@@ -174,6 +177,7 @@ class Parser:
                 "sub-command, or update."
             )
             exit(1)
+        # Validate Subcommands
         if args.sub_command is not None:
             plural_cls = jamf.records.class_name(args.record, case_sensitive=False)
             singlar_cls = plural_cls.singular_class
@@ -234,9 +238,13 @@ class Parser:
                     f"should look something like this: {sub_c}_print_during."
                 )
                 exit(1)
+        # Validate conflicting args, quiet
         if args.quiet_as_a_mouse:
             if args.json:
                 print("Can't print json if quiet...")
+                exit()
+            if args.print_id:
+                print("Can't print ids if quiet...")
                 exit()
             if args.long:
                 print("Can't print long if quiet...")
@@ -248,7 +256,14 @@ class Parser:
                     "--use-the-force-luke."
                 )
                 exit(1)
-
+        # Validate conflicting args, ids and others
+        if args.print_id:
+            if args.long:
+                print("Can't print ids and long at the same time...")
+                exit()
+            elif args.path:
+                print("Can't print ids and path at the same time...")
+                exit()
         # Process the update parameters to validate them before proceeding.
         if args.update:
             update_processed_ = []
@@ -294,7 +309,7 @@ def check_for_match(path_data, search, op):
             return True
         elif op == "!=" and path_data != search:
             return True
-        elif op == "=~" or op == "~=":  # TODO ~= deprecated 2022-05
+        elif op == "=~" or op == "~=": # TODO ~= deprecated 2022-05
             m = re.search(search, path_data)
             if m:
                 return True
@@ -380,7 +395,7 @@ def main(argv):  # noqa: C901
         sorted_results = []
 
     # Filter and print
-    # Filtering is slow so print in the same loop for continual feedback
+    # Filtering is slow. Some things can be printed in the same loop
     filtered_results = []
 
     if args.sub_command and "print_before" in args.sub_command:
@@ -417,11 +432,16 @@ def main(argv):  # noqa: C901
         else:
             if args.json:
                 json_output += "\n  "
-            if args.path:
+            if args.print_id:
+                if args.json:
+                    json_output += json.dumps(record.id) + ","
+                else:
+                    print(record.id)
+            elif args.path:
                 if args.json:
                     json_output += "{"
                     for path_ in args.path:
-                        json_output += '"' + path_ + '": '
+                        json_output += "\"" + path_ + "\": "
                         json_output += json.dumps(record.get_path(path_))
                         json_output += ","
                     json_output = json_output[:-1]  # Remove the last comma
@@ -445,7 +465,7 @@ def main(argv):  # noqa: C901
         if args.json:
             json_output = json_output[:-1]  # Remove the last comma
             print("[" + json_output + "\n]")
-        else:
+        elif not args.print_id:
             if len(filtered_results) > 1:
                 print("Count: " + str(len(filtered_results)))
 
