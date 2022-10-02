@@ -342,9 +342,9 @@ def main(argv):  # noqa: C901
     timmy = Parser()
     args = timmy.parse(argv)
     if args.debug:
+        logger.setLevel(level=logging.DEBUG)
         logger.debug("Warning, debugging output may contain passwords, tokens,"
                      "or other sensitive information!")
-        logger.setLevel(level=logging.DEBUG)
     logger.debug(f"args: {args!r}")
     if args.config:
         api = jamf.API(config_path=args.config)
