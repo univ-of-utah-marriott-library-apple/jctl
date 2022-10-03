@@ -309,7 +309,7 @@ def check_for_match(path_data, search, op):
             return True
         elif op == "!=" and path_data != search:
             return True
-        elif op == "=~" or op == "~=": # TODO ~= deprecated 2022-05
+        elif op == "=~" or op == "~=":  # TODO ~= deprecated 2022-05
             m = re.search(search, path_data)
             if m:
                 return True
@@ -343,8 +343,10 @@ def main(argv):  # noqa: C901
     args = timmy.parse(argv)
     if args.debug:
         logger.setLevel(level=logging.DEBUG)
-        logger.debug("Warning, debugging output may contain passwords, tokens, "
-                     "or other sensitive information!")
+        logger.debug(
+            "Warning, debugging output may contain passwords, tokens, "
+            "or other sensitive information!"
+        )
     logger.debug(f"args: {args!r}")
     if args.config:
         api = jamf.API(config_path=args.config)
@@ -450,7 +452,7 @@ def main(argv):  # noqa: C901
                     json_output += "{"
                     if len(temp) > 0:
                         for path_ in temp:
-                            json_output += "\"" + path_ + "\": "
+                            json_output += '"' + path_ + '": '
                             json_output += json.dumps(temp[path_])
                             json_output += ","
                         json_output = json_output[:-1]  # Remove the last comma
