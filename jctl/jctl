@@ -368,7 +368,7 @@ def main(argv):  # noqa: C901
         making_a_change = args.delete or args.create or args.update
 
     if not args.quiet_as_a_mouse and making_a_change:
-        print("Server: " + api.url)
+        print("Server: " + api.hostname)
 
     # Quick filter records
     if all_records and (args.regex or args.name or args.id):
