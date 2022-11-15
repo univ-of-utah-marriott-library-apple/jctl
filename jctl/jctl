@@ -119,7 +119,7 @@ class Parser:
             help="Spew out lots of output",
         )
 
-    def str_to_json(self, value_):
+    def json_str_to_dict(self, value_):
         try:
             json_dump_ = json.dumps(ast.literal_eval(value_))
         except:  # SyntaxError  ValueError
@@ -270,7 +270,7 @@ class Parser:
             for update_string_ in args.update:
                 update_parts_ = re.match("(^[^=]*)=([^=]*$)", update_string_)
                 if update_parts_:
-                    value_ = self.str_to_json(update_parts_[2])
+                    value_ = self.json_str_to_dict(update_parts_[2])
                     update_processed_.append([update_parts_[1], value_])
                 else:
                     if not args.quiet_as_a_mouse:
