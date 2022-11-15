@@ -1,6 +1,5 @@
 # jctl
 
-
 ## Introduction
 
 `jctl` is a command line based tool to make using `python-jamf`, a Python 3 module to access Jamf Pro Classic API, easier to use. `jctl` uses `python-jamf` to select objects to create, delete, print and update. It allows performing Jamf Pro repetitive tasks quickly and provides options not available in the web GUI. It is similar to SQL statements, but far less complex.
@@ -19,13 +18,15 @@ For more information on how [python-jamf](https://github.com/univ-of-utah-marrio
 
 ## Quick Start
 
+If you don't have Python installed, you need to read about [Installing Python](https://github.com/univ-of-utah-marriott-library-apple/jctl/wiki/Installing-Python) on the wiki.
+
 ### Installing
 
- - Install Module & Requirements: `sudo pip3 install jctl`
- - On your Jamf Pro server create a Jamf Pro API User
- - Config: `conf-python-jamf`
- - Enter hostname, username, and password
- - Test: `conf-python-jamf -t`
+- Install Module & Requirements: `sudo pip3 install jctl`
+- On your Jamf Pro server create a Jamf Pro API User
+- Config: `conf-python-jamf`
+- Enter hostname, username, and password
+- Test: `conf-python-jamf -t`
 
 ### Uninstalling
 
