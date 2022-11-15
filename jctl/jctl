@@ -140,7 +140,6 @@ class Parser:
             sys.stderr.write("jctl " + __version__)
             sys.stderr.write(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
             exit(1)
-        check_version()
         if args.record is None:
             sys.stderr.write(
                 "Please specify a record type:\n - "
@@ -339,6 +338,7 @@ def check_for_match(path_data, search, op):
 def main(argv):  # noqa: C901
     # THERE ARE EXITS THROUGHOUT
     logger = logging.getLogger(__name__)
+    check_version()
     args = Parser().parse(argv)
     if args.debug:
         logger.setLevel(level=logging.DEBUG)
@@ -353,10 +353,10 @@ def main(argv):  # noqa: C901
         api = jamf.API()
     # Get the main class
     rec_class = jamf.records.class_name(args.record, case_sensitive=False)
-    if not args.create:
-        all_records = rec_class()
-    else:
+    if args.create:
         all_records = None
+    else:
+        all_records = rec_class()
 
     ############################################################################
     # Are we making a change?
@@ -377,7 +377,7 @@ def main(argv):  # noqa: C901
                 temps = temps + all_records.recordsWithRegex(regex)
         if args.name:
             for name in args.name:
-                temps = temps + [all_records.recordWithName(name)]
+                temps = temps + all_records.recordsWithName(name)
         if args.id:
             for id in args.id:
                 try:
@@ -418,7 +418,10 @@ def main(argv):  # noqa: C901
                 m2 = re.match("(.*)([=!]=|=~|~=|!=~)(.*)", searchpath)
                 m = m1 if m1 else m2
                 if not_filtered and m:
-                    path_data = record.get_path(m[1])
+                    try:
+                        path_data = record.get_path(m[1])
+                    except jamf.records.NotFound:
+                        path_data = None
                     not_filtered = check_for_match(path_data, m[3], m[2])
                     if not not_filtered:
                         continue
@@ -447,9 +450,11 @@ def main(argv):  # noqa: C901
             elif args.path:
                 temp = {}
                 for path_ in args.path:
-                    value = record.get_path(path_)
-                    if value is not None:
-                        temp[path_] = value
+                    try:
+                        value = record.get_path(path_)
+                    except jamf.records.NotFound:
+                        value = None
+                    temp[path_] = value
                 if args.json:
                     json_output += "{"
                     if len(temp) > 0:
