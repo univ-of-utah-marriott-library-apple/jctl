@@ -290,18 +290,6 @@ def check_version():
         exit()
 
 
-def confirm(_message):
-    """
-    Ask user to enter Y or N (case-insensitive).
-    :return: True if the answer is Y.
-    :rtype: bool
-    """
-    answer = ""
-    while answer not in ["y", "n"]:
-        answer = input(_message).lower()
-    return answer == "y"
-
-
 def check_for_match(path_data, search, op):
     if isinstance(path_data, str):
         if op == "==" and path_data == search:
@@ -426,6 +414,63 @@ class JSONOutput(JCTLOutput):
     def print_end(self, filtered_results):
         self.json_output = self.json_output[:-1]  # Remove the last comma
         print("[" + self.json_output + "\n]")
+
+
+def confirm(_message):
+    """
+    Ask user to enter Y or N (case-insensitive).
+    :return: True if the answer is Y.
+    :rtype: bool
+    """
+    answer = ""
+    while answer not in ["y", "n"]:
+        answer = input(_message).lower()
+    return answer == "y"
+
+
+def change_confirmation(args, rec_class, filtered_results):
+    if not args.create and len(filtered_results) == 0:
+        sys.stderr.write("No records found")
+        exit(1)
+    change_type_ = ""
+    if args.delete:
+        change_type_ = "delete"
+    elif args.create:
+        change_type_ = "create"
+    elif args.update:
+        change_type_ = "update"
+    if args.use_the_force_luke:
+        if not args.quiet_as_a_mouse:
+            print(f"Performing {change_type_} without confirmation.")
+        if not args.andele_andele:
+            if not args.quiet_as_a_mouse:
+                print("Waiting 3 seconds.")
+            time.sleep(3)
+    elif args.create:
+        if args.json:
+            confirmed = confirm(
+                f"Are you sure you want to create a "
+                f"{rec_class.singular_class.__name__} with the data "
+                f'"{args.create[0]}" [y/n]? '
+            )
+        else:
+            confirmed = confirm(
+                f"Are you sure you want to create a "
+                f"{rec_class.singular_class.__name__} named "
+                f'"{args.create[0]}" [y/n]? '
+            )
+    elif args.update:
+        pprint(args.update)
+        confirmed = confirm(
+            f"Are you sure you want to update "
+            f"{len(filtered_results)} record(s) [y/n]? "
+        )
+    else:
+        confirmed = confirm(
+            f"Are you sure you want to {change_type_} "
+            f"{len(filtered_results)} record(s) [y/n]? "
+        )
+    return confirmed
 
 
 def main(argv):  # noqa: C901
@@ -568,46 +613,8 @@ def main(argv):  # noqa: C901
     # Confirm Make a change
     confirmed = False
     if making_a_change:
-        if not args.create and len(filtered_results) == 0:
-            print("No records found")
-            exit(1)
-        change_type_ = ""
-        if args.delete:
-            change_type_ = "delete"
-        elif args.create:
-            change_type_ = "create"
-        elif args.update:
-            change_type_ = "update"
-        else:
-            change_type_ = "change"
+        confirmed = change_confirmation(args, rec_class, filtered_results)
 
-        confirmed = args.use_the_force_luke
-        if args.quiet_as_a_mouse:
-            if confirmed and not args.andele_andele:
-                time.sleep(3)
-        else:
-            if confirmed:
-                print(f"Performing {change_type_} without confirmation.")
-                if not args.andele_andele:
-                    print("Waiting 3 seconds.")
-                    time.sleep(3)
-            elif args.create:
-                confirmed = confirm(
-                    f"Are you sure you want to create a "
-                    f"{rec_class.singular_class.__name__} named "
-                    f'"{args.create[0]}" [y/n]? '
-                )
-            elif args.update:
-                pprint(args.update)
-                confirmed = confirm(
-                    f"Are you sure you want to update "
-                    f"{len(filtered_results)} record(s) [y/n]? "
-                )
-            else:
-                confirmed = confirm(
-                    f"Are you sure you want to {change_type_} "
-                    f"{len(filtered_results)} record(s) [y/n]? "
-                )
     if confirmed and args.create:
         try:
             _ = rec_class().createNewRecord(args.create)
