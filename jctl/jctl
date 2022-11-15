@@ -44,7 +44,7 @@ class Parser:
             "-c",
             "--create",
             nargs="*",
-            help="Create jamf record (e.g. '-n <rec_name> [other]')",
+            help="Create jamf record (e.g. '-c <rec_name>' or '-j -c <json>)",
         )
         self.parser.add_argument(
             "-u",
@@ -264,7 +264,17 @@ class Parser:
                 sys.stderr.write("Can't print ids and path at the same time...")
                 exit()
         # Process the update parameters to validate them before proceeding.
-        if args.update:
+        if args.create and args.json:
+            if len(args.create) == 1:
+                args.create = [
+                    self.json_str_to_dict(args.create[0])
+                ]
+            else:
+                sys.stderr.write(
+                    f'When using -j create can only take 1 argument, the json.'
+                )
+                exit(1)
+        elif args.update:
             update_processed_ = []
             for update_string_ in args.update:
                 operands = re.match("(^[^=]*)=([^=]*$)", update_string_)
