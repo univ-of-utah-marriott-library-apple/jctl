@@ -268,10 +268,10 @@ class Parser:
         if args.update:
             update_processed_ = []
             for update_string_ in args.update:
-                update_parts_ = re.match("(^[^=]*)=([^=]*$)", update_string_)
-                if update_parts_:
-                    value_ = self.json_str_to_dict(update_parts_[2])
-                    update_processed_.append([update_parts_[1], value_])
+                operands = re.match("(^[^=]*)=([^=]*$)", update_string_)
+                if operands:
+                    value_ = self.json_str_to_dict(operands[2])
+                    update_processed_.append([operands[1], value_])
                 else:
                     if not args.quiet_as_a_mouse:
                         sys.stderr.write(
