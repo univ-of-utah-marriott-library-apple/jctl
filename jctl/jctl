@@ -335,6 +335,99 @@ def check_for_match(path_data, search, op):
         return op == "!=" or op == "!=~"
 
 
+class SilentOutput():
+    def __init__(self, args):
+        self.andele_andele = args.andele_andele
+        self.use_the_force_luke = args.use_the_force_luke
+
+    def print_start(self):
+        pass
+
+    def print_server(self, record):
+        pass
+
+    def print_id(self, record):
+        pass
+
+    def print_path(self, record):
+        pass
+
+    def print_long(self, record):
+        pass
+
+    def print_short(self, record):
+        pass
+
+    def print_end(self, filtered_results):
+        pass
+
+
+class JCTLOutput():
+
+    def __init__(self, args):
+        self.andele_andele = args.andele_andele
+        self.use_the_force_luke = args.use_the_force_luke
+
+    def print_start(self):
+        pass
+
+    def print_server(self, hostname):
+        print("Server: " + hostname)
+
+    def print_id(self, record):
+        print(record.id)
+
+    def print_path(self, record, temp):
+        pprint({record.name: temp})
+
+    def print_long(self, record):
+        pprint({record.name: record.data})
+
+    def print_short(self, record):
+        print(record)
+
+    def print_end(self, filtered_results):
+        if len(filtered_results) > 1:
+            print("Count: " + str(len(filtered_results)))
+
+
+class JSONOutput(JCTLOutput):
+
+    def __init__(self, args):
+        self.andele_andele = args.andele_andele
+        self.json_output = ""
+        self.use_the_force_luke = args.use_the_force_luke
+
+    def print_start(self):
+        self.json_output += "\n  "
+
+    def print_server(self, hostname):
+        print("Server: " + hostname)
+
+    def print_id(self, record):
+        self.json_output += json.dumps(record.id) + ","
+
+    def print_path(self, record, temp):
+        self.json_output += "{"
+        if len(temp) > 0:
+            for path_ in temp:
+                self.json_output += '"' + path_ + '": '
+                self.json_output += json.dumps(temp[path_])
+                self.json_output += ","
+            self.json_output = self.json_output[:-1]  # Remove the last comma
+        self.json_output += "},"
+
+    def print_long(self, record):
+        self.json_output += json.dumps(record.data) + ","
+
+    def print_short(self, record):
+        self.json_output += json.dumps(record.name) + ","
+
+    def print_end(self, filtered_results):
+        self.json_output = self.json_output[:-1]  # Remove the last comma
+        print("[" + self.json_output + "\n]")
+
+
 def main(argv):  # noqa: C901
     # THERE ARE EXITS THROUGHOUT
     logger = logging.getLogger(__name__)
@@ -359,14 +452,23 @@ def main(argv):  # noqa: C901
         all_records = rec_class()
 
     ############################################################################
+    # What type of feedback (mutually exclusive)
+    if args.json:
+        outputer = JSONOutput(args)
+    elif args.quiet_as_a_mouse:
+        outputer = SilentOutput(args)
+    else:
+        outputer = JCTLOutput(args)
+
+    ############################################################################
     # Are we making a change?
     if args.sub_command:
         making_a_change = "update" in args.sub_command["when_to_run"]
     else:
         making_a_change = args.delete or args.create or args.update
 
-    if not args.quiet_as_a_mouse and making_a_change:
-        print("Server: " + api.hostname)
+    if making_a_change:
+        outputer.print_server(api.hostname)
 
     ############################################################################
     # Quick filter records
@@ -407,7 +509,6 @@ def main(argv):  # noqa: C901
         method = getattr(rec_class, args.sub_command["print_before"])
         method(rec_class, *args.sub_command["args"])
 
-    json_output = ""
     for record in sorted_results:
         ########################################################################
         # Check to see if it's filtered
@@ -440,13 +541,9 @@ def main(argv):  # noqa: C901
             method = getattr(rec_class.singular_class, args.sub_command["print_during"])
             method(record, *args.sub_command["args"])
         else:
-            if args.json:
-                json_output += "\n  "
+            outputer.print_start()
             if args.print_id:
-                if args.json:
-                    json_output += json.dumps(record.id) + ","
-                else:
-                    print(record.id)
+                outputer.print_id(record)
             elif args.path:
                 temp = {}
                 for path_ in args.path:
@@ -455,34 +552,13 @@ def main(argv):  # noqa: C901
                     except jamf.records.NotFound:
                         value = None
                     temp[path_] = value
-                if args.json:
-                    json_output += "{"
-                    if len(temp) > 0:
-                        for path_ in temp:
-                            json_output += '"' + path_ + '": '
-                            json_output += json.dumps(temp[path_])
-                            json_output += ","
-                        json_output = json_output[:-1]  # Remove the last comma
-                    json_output += "},"
-                else:
-                    pprint({record.name: temp})
+                outputer.print_path(record, temp)
             elif args.long:
-                if args.json:
-                    json_output += json.dumps(record.data) + ","
-                else:
-                    pprint({record.name: record.data})
+                outputer.print_long(record)
             else:
-                if args.json:
-                    json_output += json.dumps(record.name) + ","
-                else:
-                    print(record)
-    if not args.quiet_as_a_mouse:
-        if args.json:
-            json_output = json_output[:-1]  # Remove the last comma
-            print("[" + json_output + "\n]")
-        elif not args.print_id:
-            if len(filtered_results) > 1:
-                print("Count: " + str(len(filtered_results)))
+                outputer.print_short(record)
+
+    outputer.print_end(filtered_results)
 
     if args.sub_command and "print_after" in args.sub_command:
         method = getattr(rec_class, args.sub_command["print_after"])
