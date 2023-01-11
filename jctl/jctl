@@ -22,7 +22,7 @@ import re
 import sys
 import time
 from pprint import pprint
-from deepdiff import DeepDiff
+
 import jamf
 
 
@@ -648,12 +648,8 @@ def main(argv):  # noqa: C901
                         except jamf.records.NotFound:
                             old_ = None
                         if not args.quiet_as_a_mouse:
-                            diff = DeepDiff(old_, value_)
-                            if len(diff.keys()) == 0:
-                                print("Nothing changed!")
-                            else:
-                                print(f"Old value: {path_} = {old_}")
-                                print(f"Set value: {path_} = {value_}")
+                            print(f"Old value: {path_} = {old_}")
+                            print(f"Set value: {path_} = {value_}")
                     success = success and record.set_path(path_, value_)
                 if success:
                     try:
@@ -663,18 +659,7 @@ def main(argv):  # noqa: C901
                             record.refresh()
                             for path_ in paths:
                                 new_ = record.get_path(path_)
-                                diff1 = DeepDiff(new_, value_)
-                                diff2 = DeepDiff(old_, new_)
-                                if len(diff1.keys()) != 0:
-                                    print(diff1)
-                                    print("Unsuccessful 1")
-                                    print(f"New value: {path_} = {new_}")
-                                elif len(diff2.keys()) != 0:
-                                    print(diff2)
-                                    print("Value changed, but not to what you specified:")
-                                    print(f"New value: {path_} = {new_}")
-                                else:
-                                    print("Success")
+                                print(f"New value: {path_} = {new_}")
                     except Exception as e:
                         print(f"Couldn't save changed record: {e}")
                 else:
