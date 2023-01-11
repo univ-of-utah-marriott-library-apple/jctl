@@ -126,7 +126,7 @@ class Parser:
             try:
                 json_dump_ = json.dumps(value_)
             except ValueError:
-                sys.stderr.write(f'Could not convert "{value_}" to JSON.')
+                sys.stderr.write(f'Could not convert "{value_}" to JSON.\n')
                 exit(1)
         return json.loads(json_dump_)
 
@@ -137,28 +137,22 @@ class Parser:
         """
         args = self.parser.parse_args(argv)
         if args.version:
-            sys.stderr.write("jctl " + __version__)
-            sys.stderr.write(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
+            sys.stderr.write("jctl " + __version__ + "\n")
+            sys.stderr.write(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)\n")
             exit(1)
         if args.record is None:
             sys.stderr.write(
                 "Please specify a record type:\n - "
-                + "\n - ".join(self.valid_jamf_records)
+                + "\n - ".join(self.valid_jamf_records) + "\n"
             )
-            exit()
+            exit(1)
         try:
             self.record = jamf.records.class_name(args.record, case_sensitive=False)
         except jamf.records.JamfError as e:
-            sys.stderr.write(f"error: {e.message}")
+            sys.stderr.write(f"error: {e.message}\n")
             sys.stderr.write(
                 "Please specify a valid record type:\n - "
-                + "\n - ".join(self.valid_jamf_records)
-            )
-            exit(1)
-        if args.record is None:
-            sys.stderr.write(
-                "Please specify a record type:\n - "
-                + "\n - ".join(self.valid_jamf_records)
+                + "\n - ".join(self.valid_jamf_records) + "\n"
             )
             exit(1)
         flags = 0
@@ -173,7 +167,7 @@ class Parser:
         if flags > 1:
             sys.stderr.write(
                 "Can not do any of these actions together: delete, create, "
-                "sub-command, or update."
+                "sub-command, or update.\n"
             )
             exit(1)
         # Validate Subcommands
@@ -182,22 +176,22 @@ class Parser:
             singlar_cls = plural_cls.singular_class
             # Validate the class has subcommands
             if not hasattr(plural_cls, "sub_commands"):
-                sys.stderr.write(args.record + " has no subcommands.")
+                sys.stderr.write(args.record + " has no subcommands.\n")
                 exit(1)
             if len(args.sub_command) == 0:
-                sys.stderr.write(f"{args.record} valid subcommands are:")
+                sys.stderr.write(f"{args.record} valid subcommands are:\n")
                 kys = plural_cls.sub_commands.keys()
-                sys.stderr.write("  " + "\n  ".join(str(key) for key in kys))
+                sys.stderr.write("  " + "\n  ".join(str(key) for key in kys) + "\n")
                 exit(1)
             # Validate the subcommand exists
             sub_c = args.sub_command[0]
             if sub_c not in plural_cls.sub_commands:
                 sys.stderr.write(
                     f"{args.record} does not have subcommand: "
-                    f"{args.sub_command[0]}. Valid subcommands are:"
+                    f"{args.sub_command[0]}.\nValid subcommands are:\n"
                 )
                 kys = plural_cls.sub_commands.keys()
-                sys.stderr.write("  " + "\n  ".join(str(key) for key in kys))
+                sys.stderr.write("  " + "\n  ".join(str(key) for key in kys) + "\n")
                 exit(1)
             # Validate the arg count is correct
             args_c = plural_cls.sub_commands[sub_c]["required_args"]
@@ -205,7 +199,7 @@ class Parser:
             if len(args.sub_command) - 1 != args_c:
                 sys.stderr.write(
                     f"{args.record} {args.sub_command[0]} requires {args_c} arg(s), "
-                    f"{args_d}"
+                    f"{args_d}\n"
                 )
                 exit(1)
             # Save data
@@ -226,7 +220,7 @@ class Parser:
                     if hasattr(class_ptr, method):
                         method_ptr = getattr(class_ptr, method)
                         if not callable(method_ptr):
-                            sys.stderr.write(f"{args.record} subcommand {method} is broken...")
+                            sys.stderr.write(f"{args.record} subcommand {method} is broken...\n")
                             exit(1)
                         method_found = True
                         args.sub_command[when + "_" + loop_when] = method
@@ -234,34 +228,34 @@ class Parser:
             if not method_found:
                 sys.stderr.write(
                     f"{args.record} subcommand {sub_c} has no valid methods. They "
-                    f"should look something like this: {sub_c}_print_during."
+                    f"should look something like this: {sub_c}_print_during.\n"
                 )
                 exit(1)
         # Validate conflicting args, quiet
         if args.quiet_as_a_mouse:
             if args.json:
-                sys.stderr.write("Can't print json if quiet...")
+                sys.stderr.write("Can't print json if quiet...\n")
                 exit()
             if args.print_id:
-                sys.stderr.write("Can't print ids if quiet...")
+                sys.stderr.write("Can't print ids if quiet...\n")
                 exit()
             if args.long:
-                sys.stderr.write("Can't print long if quiet...")
+                sys.stderr.write("Can't print long if quiet...\n")
                 exit()
             if (args.delete or args.update) and not args.use_the_force_luke:
                 sys.stderr.write(
                     "If you want to update/delete records without "
                     "confirmation you must also specify "
-                    "--use-the-force-luke."
+                    "--use-the-force-luke.\n"
                 )
                 exit(1)
         # Validate conflicting args, ids and others
         if args.print_id:
             if args.long:
-                sys.stderr.write("Can't print ids and long at the same time...")
+                sys.stderr.write("Can't print ids and long at the same time...\n")
                 exit()
             elif args.path:
-                sys.stderr.write("Can't print ids and path at the same time...")
+                sys.stderr.write("Can't print ids and path at the same time...\n")
                 exit()
         # Process the update parameters to validate them before proceeding.
         if args.create and args.json:
@@ -271,7 +265,7 @@ class Parser:
                 ]
             else:
                 sys.stderr.write(
-                    f'When using -j create can only take 1 argument, the json.'
+                    f'When using -j create can only take 1 argument, the json.\n'
                 )
                 exit(1)
         elif args.update:
@@ -284,7 +278,7 @@ class Parser:
                 else:
                     if not args.quiet_as_a_mouse:
                         sys.stderr.write(
-                            f'The update string "{update_string_}" requires a single "=".'
+                            f"The update string \"{update_string_}\" requires a single \"=\".\n"
                         )
             args.update = update_processed_
         return args
@@ -295,7 +289,7 @@ def check_version():
     if python_jamf_version != min_jamf_version:
         sys.stderr.write(
             f"jctl requires python-jamf {min_jamf_version} or newer. "
-            f"You have {python_jamf_version}."
+            f"You have {python_jamf_version}.\n"
         )
         exit()
 
@@ -440,7 +434,7 @@ def confirm(_message):
 
 def change_confirmation(args, rec_class, filtered_results):
     if not args.create and len(filtered_results) == 0:
-        sys.stderr.write("No records found")
+        sys.stderr.write("No records found\n")
         exit(1)
     if args.delete:
         change_type_ = "delete"
@@ -539,7 +533,7 @@ def main(argv):  # noqa: C901
                 try:
                     id = int(id)
                 except ValueError:
-                    sys.stderr.write(f"ID must be a number: {id}")
+                    sys.stderr.write(f"ID must be a number: {id}\n")
                     exit(1)
                 temps = temps + [all_records.recordWithId(id)]
         quick = []
@@ -628,7 +622,7 @@ def main(argv):  # noqa: C901
         try:
             _ = rec_class().createNewRecord(args.create)
         except Exception as e:
-            sys.stderr.write(f"Couldn't create record: {e}")
+            sys.stderr.write(f"Couldn't create record: {e}\n")
     elif confirmed:
         if args.sub_command and "update_before" in args.sub_command:
             method = getattr(rec_class, args.sub_command["update_before"])
