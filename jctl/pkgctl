@@ -232,38 +232,44 @@ def process_package_group(group, packages):
                 loop = False
 
 
+def print_group(group, children, related, group_index, choices_len):
+    print_me = False
+    text = ""
+    if group_index:
+        if len(children) > 1:
+            text += "[{:<2}] {:<35} {:<13} {:<8} {:<6}\n".format(
+                str(choices_len), group, "PatchPolicies", "Policies", "Groups"
+            )
+            print_me = True
+    else:
+        text += "{:<35}   {:<13} {:<8} {:<6}\n".format(
+            group, "PatchPolicies", "Policies", "Groups"
+        )
+        print_me = True
+    if print_me:
+        for child in children:
+            b, c, d = "", "", ""
+            if related:
+                if "PatchPolicies" in child.related:
+                    b = str(len(child.related["PatchPolicies"]))
+                if "Policies" in child.related:
+                    c = str(len(child.related["Policies"]))
+                if "ComputerGroups" in child.related:
+                    d = str(len(child.related["ComputerGroups"]))
+                text += "  {:<38} {:<13} {:<8} {:<6}\n".format(str(child), b, c, d)
+        print(f"{text}")
+
+
 def print_groups(packages, related=False, group_index=False):
     if related:
         loadRelatedData(packages)
     group_choices = []
     for group, children in packages.groups.items():
-        print_me = False
-        text = ""
         if group_index:
             if len(children) > 1:
                 group_choices.append(group)
-                text += f"[{len(group_choices)}] {group}\n"
-                print_me = True
-        else:
-            text += f"{group}\n"
-            print_me = True
-        if print_me:
-            for child in children:
-                text += f"  {child}"
-                if related:
-                    text += " - "
-                    if "PatchSoftwareTitles" in child.related:
-                        text += f"patch {len(child.related['PatchSoftwareTitles'])}; "
-                    if "Policies" in child.related:
-                        text += f"Policies {len(child.related['Policies'])}; "
-                    if "ComputerGroups" in child.related:
-                        text += (
-                            f"ComputerGroups {len(child.related['ComputerGroups'])}; "
-                        )
-                    if "PatchPolicies" in child.related:
-                        text += f"PatchPolicies {len(child.related['PatchPolicies'])}; "
-                text += "\n"
-            print(f"{text}")
+                choices_len = len(group_choices)
+        print_group(group, children, related, group_index, choices_len)
     return group_choices
 
 
