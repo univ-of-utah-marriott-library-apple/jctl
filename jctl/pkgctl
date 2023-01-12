@@ -117,13 +117,54 @@ def save(rec):
         return False
 
 
+def pick_package_definition(pstitle, new_package):
+    choices = list(map(str, range(1, 10))) + ["b", "x", "q"]
+    answer = ""
+    while answer not in choices:
+        counter = 1
+        print(f"{new_package.name} is not defined. Pick a version.")
+        for definition in pstitle.data["versions"]["version"]:
+            print( f"[{counter}] {definition['software_version']}" )
+            counter += 1
+            if counter > 10:
+                break
+        answer = input("Enter a number, [b]ack, or e[x]it/[q]uit: ").lower()
+    if answer == "x" or answer == "q":
+        exit()
+    elif answer == "b":
+        return None
+    else:
+        answer_idx = int(answer)-1
+        pstitle_ver = pstitle.data["versions"]["version"][answer_idx]
+        pstitle_ver["package"] = {"name": new_package.name}
+        pstitle.save()
+        pstitle.refresh()
+        return pstitle_ver["software_version"]
+
+
 def process_patchpolicies_promotion(item, new_package, rec):
     if "version" in new_package.metadata:
         pkg_version = new_package.metadata["version"]
     else:
         print(f"Couldn't determine version for {new_package.name}")
         return False
-    rec.data["general"]["target_version"] = pkg_version
+    pstitle_id = rec.data["software_title_configuration_id"]
+    pstitle = jamf.PatchSoftwareTitles().recordWithId(pstitle_id)
+    found = False
+    for definition in pstitle.data["versions"]["version"]:
+        if ( definition["package"] is not None):
+            defined_pkg = definition["package"]
+            if ( defined_pkg["name"] == new_package.name ):
+                defined_ver = definition["software_version"]
+                rec.data["general"]["target_version"] = defined_ver
+                found = True
+                break
+    if ( not found ):
+        defined_ver = pick_package_definition(pstitle, new_package)
+        if defined_ver is not None:
+            rec.data["general"]["target_version"] = defined_ver
+        else:
+            return False
     success = save(rec)
     rec.refresh()
     new_package.refresh_related()
