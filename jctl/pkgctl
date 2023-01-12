@@ -15,6 +15,7 @@ min_jamf_version = "0.8.0"
 
 import argparse
 import logging
+import re
 import sys
 from pprint import pprint
 
@@ -54,6 +55,11 @@ class Parser:
         self.parser.add_argument(
             "-v", "--version", action="store_true", help="print version and exit"
         )
+        self.parser.add_argument(
+            "--debug",
+            action="store_true",
+            help="Spew out lots of output",
+        )
 
     def parse(self, argv):
         """
@@ -89,13 +95,26 @@ def confirm(_message):
 def printWaitText():
     if not hasattr(printWaitText, "printed"):
         printWaitText.printed = True
-        print("Analyzing Jamf data")
+        print("Reading Jamf data (this could take several minutes, depending on the size of your data)")
 
 
 def loadRelatedData(packages):
     printWaitText()
     for record in packages:
         record.related
+
+
+def save(rec):
+    try:
+        rec.save()
+        return True
+    except jamf.exceptions.JamfConnectionError as e:
+        print(f"Error - {e}")
+        print(
+            "This utility is no longer in sync with the Jamf,"
+            " server. Continue only if you know what you're doing."
+        )
+        return False
 
 
 def process_patchpolicies_promotion(item, new_package, rec):
@@ -105,18 +124,11 @@ def process_patchpolicies_promotion(item, new_package, rec):
         print(f"Couldn't determine version for {new_package.name}")
         return False
     rec.data["general"]["target_version"] = pkg_version
-    try:
-        rec.save()
-    except jamf.api.APIError as e:
-        print(f"Error - {e}")
-        print(
-            "This utility is no longer in sync with the Jamf,"
-            " server. Continue only if you know what you're doing."
-        )
+    success = save(rec)
     rec.refresh()
     new_package.refresh_related()
     print(f"Saved patch policiy named {item[1]}")
-    return True
+    return success
 
 
 def process_policies_promotion(item, package, new_package, rec):
@@ -125,40 +137,25 @@ def process_policies_promotion(item, package, new_package, rec):
         if rec_package["name"] == package.name:
             del rec_package["id"]
             rec_package["name"] = new_package.name
-            try:
-                rec.save()
-            except jamf.api.APIError as e:
-                print(f"Error - {e}")
-                print(
-                    "This utility is no longer in sync with the Jamf,"
-                    " server. Continue only if you know what you're doing."
-                )
+            success = save(rec)
             rec.refresh()
             package.refresh_related()
             print(f"Saved policy named {item[1]}")
-            return True
+            return success
 
 
 def process_computergroups_promotion(item, package, new_package, rec):
     criteria = rec.data["criteria"]["criterion"]
-    if not type(criteria) is list:
-        criteria = [criteria]
-    print(new_package.name)
     for crit in criteria:
         if crit["value"] == package.name:
             crit["value"] = new_package.name
-            try:
-                rec.save()
-            except jamf.api.APIError as e:
-                print(f"Error - {e}")
-                print(
-                    "This utility is no longer in sync with the Jamf,"
-                    " server. Continue only if you know what you're doing."
-                )
-            rec.refresh()
-            package.refresh_related()
-            print(f"Saved computer group named {item[1]}")
-            return True
+    rec.name = re.sub(f"{package.name}", new_package.name, rec.name)
+    rec.data["name"] = rec.name
+    success = save(rec)
+    rec.refresh()
+    package.refresh_related()
+    print(f"Saved computer group named {item[1]}")
+    return success
 
 
 def process_package_promotion(item, packages):
@@ -239,7 +236,6 @@ def print_groups(packages, related=False, group_index=False):
     if related:
         loadRelatedData(packages)
     group_choices = []
-    pprint(packages.groups)
     for group, children in packages.groups.items():
         print_me = False
         text = ""
@@ -340,12 +336,20 @@ def interactive(all_packages):
 def main(argv):
     logger = logging.getLogger(__name__)
     args = Parser().parse(argv)
+    if args.debug:
+        logger.setLevel(level=logging.DEBUG)
+        logger.debug(
+            "Warning, debugging output may contain passwords, tokens, "
+            "or other sensitive information!"
+        )
     logger.debug(f"args: {args!r}")
     if args.version:
         print("jctl " + __version__)
         print(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
-        exit(1)
+        exit()
     check_version()
+    if args.config:
+        jamf.API(config_path=args.config)
     all_packages = jamf.records.Packages()
     sorted_results = get_sorted_results(args, all_packages)
     # Print package usage
