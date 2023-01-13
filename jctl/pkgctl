@@ -17,7 +17,6 @@ import argparse
 import logging
 import re
 import sys
-from pprint import pprint
 
 import jamf
 
@@ -145,11 +144,6 @@ def pick_package_definition(pstitle, new_package):
 
 
 def process_patchpolicies_promotion(item, new_package, rec):
-    if "version" in new_package.metadata:
-        pkg_version = new_package.metadata["version"]
-    else:
-        print(f"Couldn't determine version for {new_package.name}")
-        return False
     pstitle_id = rec.data["software_title_configuration_id"]
     pstitle = jamf.PatchSoftwareTitles().recordWithId(pstitle_id)
     found = False

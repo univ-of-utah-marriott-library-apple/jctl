@@ -269,7 +269,7 @@ class Parser:
                 args.create = [self.json_str_to_dict(args.create[0])]
             else:
                 sys.stderr.write(
-                    f"When using -j create can only take 1 argument, the json.\n"
+                    "When using -j create can only take 1 argument, the json.\n"
                 )
                 exit(1)
         elif args.update:
