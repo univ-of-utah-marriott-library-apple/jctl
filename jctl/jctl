@@ -138,12 +138,15 @@ class Parser:
         args = self.parser.parse_args(argv)
         if args.version:
             sys.stderr.write("jctl " + __version__ + "\n")
-            sys.stderr.write(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)\n")
+            sys.stderr.write(
+                f"python_jamf {jamf.version.string()} ({min_jamf_version} required)\n"
+            )
             exit(1)
         if args.record is None:
             sys.stderr.write(
                 "Please specify a record type:\n - "
-                + "\n - ".join(self.valid_jamf_records) + "\n"
+                + "\n - ".join(self.valid_jamf_records)
+                + "\n"
             )
             exit(1)
         try:
@@ -152,7 +155,8 @@ class Parser:
             sys.stderr.write(f"error: {e.message}\n")
             sys.stderr.write(
                 "Please specify a valid record type:\n - "
-                + "\n - ".join(self.valid_jamf_records) + "\n"
+                + "\n - ".join(self.valid_jamf_records)
+                + "\n"
             )
             exit(1)
         flags = 0
@@ -220,7 +224,9 @@ class Parser:
                     if hasattr(class_ptr, method):
                         method_ptr = getattr(class_ptr, method)
                         if not callable(method_ptr):
-                            sys.stderr.write(f"{args.record} subcommand {method} is broken...\n")
+                            sys.stderr.write(
+                                f"{args.record} subcommand {method} is broken...\n"
+                            )
                             exit(1)
                         method_found = True
                         args.sub_command[when + "_" + loop_when] = method
@@ -260,12 +266,10 @@ class Parser:
         # Process the update parameters to validate them before proceeding.
         if args.create and args.json:
             if len(args.create) == 1:
-                args.create = [
-                    self.json_str_to_dict(args.create[0])
-                ]
+                args.create = [self.json_str_to_dict(args.create[0])]
             else:
                 sys.stderr.write(
-                    f'When using -j create can only take 1 argument, the json.\n'
+                    f"When using -j create can only take 1 argument, the json.\n"
                 )
                 exit(1)
         elif args.update:
@@ -278,7 +282,7 @@ class Parser:
                 else:
                     if not args.quiet_as_a_mouse:
                         sys.stderr.write(
-                            f"The update string \"{update_string_}\" requires a single \"=\".\n"
+                            f'The update string "{update_string_}" requires a single "=".\n'
                         )
             args.update = update_processed_
         return args
@@ -327,7 +331,7 @@ def check_for_match(path_data, search, op):
         return op == "!=" or op == "!=~"
 
 
-class SilentOutput():
+class SilentOutput:
     def __init__(self, args):
         self.andele_andele = args.andele_andele
         self.use_the_force_luke = args.use_the_force_luke
@@ -354,8 +358,7 @@ class SilentOutput():
         pass
 
 
-class JCTLOutput():
-
+class JCTLOutput:
     def __init__(self, args):
         self.andele_andele = args.andele_andele
         self.use_the_force_luke = args.use_the_force_luke
@@ -384,7 +387,6 @@ class JCTLOutput():
 
 
 class JSONOutput(JCTLOutput):
-
     def __init__(self, args):
         self.andele_andele = args.andele_andele
         self.json_output = ""

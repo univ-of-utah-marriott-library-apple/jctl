@@ -95,7 +95,9 @@ def confirm(_message):
 def printWaitText():
     if not hasattr(printWaitText, "printed"):
         printWaitText.printed = True
-        print("Reading Jamf data (this could take several minutes, depending on the size of your data)")
+        print(
+            "Reading Jamf data (this could take several minutes, depending on the size of your data)"
+        )
 
 
 def loadRelatedData(packages):
@@ -124,7 +126,7 @@ def pick_package_definition(pstitle, new_package):
         counter = 1
         print(f"{new_package.name} is not defined. Pick a version.")
         for definition in pstitle.data["versions"]["version"]:
-            print( f"[{counter}] {definition['software_version']}" )
+            print(f"[{counter}] {definition['software_version']}")
             counter += 1
             if counter > 10:
                 break
@@ -134,7 +136,7 @@ def pick_package_definition(pstitle, new_package):
     elif answer == "b":
         return None
     else:
-        answer_idx = int(answer)-1
+        answer_idx = int(answer) - 1
         pstitle_ver = pstitle.data["versions"]["version"][answer_idx]
         pstitle_ver["package"] = {"name": new_package.name}
         pstitle.save()
@@ -152,14 +154,14 @@ def process_patchpolicies_promotion(item, new_package, rec):
     pstitle = jamf.PatchSoftwareTitles().recordWithId(pstitle_id)
     found = False
     for definition in pstitle.data["versions"]["version"]:
-        if ( definition["package"] is not None):
+        if definition["package"] is not None:
             defined_pkg = definition["package"]
-            if ( defined_pkg["name"] == new_package.name ):
+            if defined_pkg["name"] == new_package.name:
                 defined_ver = definition["software_version"]
                 rec.data["general"]["target_version"] = defined_ver
                 found = True
                 break
-    if ( not found ):
+    if not found:
         defined_ver = pick_package_definition(pstitle, new_package)
         if defined_ver is not None:
             rec.data["general"]["target_version"] = defined_ver
