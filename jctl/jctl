@@ -444,6 +444,8 @@ def change_confirmation(args, rec_class, filtered_results):
         change_type_ = "create"
     elif args.update:
         change_type_ = "update"
+    else:
+        change_type_ = "change"
     if args.use_the_force_luke:
         if not args.quiet_as_a_mouse:
             print(f"Performing {change_type_} without confirmation.")
