@@ -339,9 +339,6 @@ class SilentOutput:
     def print_start(self):
         pass
 
-    def print_server(self, record):
-        pass
-
     def print_id(self, record):
         pass
 
@@ -365,9 +362,6 @@ class JCTLOutput:
 
     def print_start(self):
         pass
-
-    def print_server(self, hostname):
-        print("Server: " + hostname)
 
     def print_id(self, record):
         print(record.id)
@@ -394,9 +388,6 @@ class JSONOutput(JCTLOutput):
 
     def print_start(self):
         self.json_output += "\n  "
-
-    def print_server(self, hostname):
-        print("Server: " + hostname)
 
     def print_id(self, record):
         self.json_output += json.dumps(record.id) + ","
@@ -434,7 +425,7 @@ def confirm(_message):
     return answer == "y"
 
 
-def change_confirmation(args, rec_class, filtered_results):
+def change_confirmation(args, rec_class, filtered_results, hostname):
     if not args.create and len(filtered_results) == 0:
         sys.stderr.write("No records found\n")
         exit(1)
@@ -448,7 +439,7 @@ def change_confirmation(args, rec_class, filtered_results):
         change_type_ = "change"
     if args.use_the_force_luke:
         if not args.quiet_as_a_mouse:
-            print(f"Performing {change_type_} without confirmation.")
+            print(f"Performing {change_type_} without confirmation on {hostname}.")
         if not args.andele_andele:
             if not args.quiet_as_a_mouse:
                 print("Waiting 3 seconds.")
@@ -458,24 +449,28 @@ def change_confirmation(args, rec_class, filtered_results):
             confirmed = confirm(
                 f"Are you sure you want to create a "
                 f"{rec_class.singular_class.__name__} with the data "
-                f'"{args.create[0]}" [y/n]? '
+                f'"{args.create[0]} on {hostname}" [y/n]? '
             )
         else:
             confirmed = confirm(
                 f"Are you sure you want to create a "
                 f"{rec_class.singular_class.__name__} named "
-                f'"{args.create[0]}" [y/n]? '
+                f'"{args.create[0]}" on {hostname} [y/n]? '
             )
     elif args.update:
         pprint(args.update)
+        number = len(filtered_results)
+        plural = "" if number == 1 else "s"
         confirmed = confirm(
             f"Are you sure you want to update "
-            f"{len(filtered_results)} record(s) [y/n]? "
+            f"{number} record{plural} on {hostname} [y/n]? "
         )
     else:
+        number = len(filtered_results)
+        plural = "" if number == 1 else "s"
         confirmed = confirm(
             f"Are you sure you want to {change_type_} "
-            f"{len(filtered_results)} record(s) [y/n]? "
+            f"{number} record{plural} on {hostname} [y/n]? "
         )
     return confirmed
 
@@ -511,16 +506,6 @@ def main(argv):  # noqa: C901
         outputer = SilentOutput(args)
     else:
         outputer = JCTLOutput(args)
-
-    ############################################################################
-    # Are we making a change?
-    if args.sub_command:
-        making_a_change = "update" in args.sub_command["when_to_run"]
-    else:
-        making_a_change = args.delete or args.create or args.update
-
-    if making_a_change:
-        outputer.print_server(api.hostname)
 
     ############################################################################
     # Quick filter records
@@ -617,10 +602,17 @@ def main(argv):  # noqa: C901
         method(rec_class, *args.sub_command["args"])
 
     ############################################################################
+    # Are we making a change?
+    if args.sub_command:
+        making_a_change = "update" in args.sub_command["when_to_run"]
+    else:
+        making_a_change = args.delete or args.create or args.update
+
+    ############################################################################
     # Confirm Make a change
     confirmed = False
     if making_a_change:
-        confirmed = change_confirmation(args, rec_class, filtered_results)
+        confirmed = change_confirmation(args, rec_class, filtered_results, api.hostname)
 
     if confirmed and args.create:
         try:
