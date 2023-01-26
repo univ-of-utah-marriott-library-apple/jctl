@@ -393,14 +393,24 @@ class JSONOutput(JCTLOutput):
         self.json_output += json.dumps(record.id) + ","
 
     def print_path(self, record, temp):
-        self.json_output += "{"
         if len(temp) > 0:
+            new_dict = {}
+            stack = [ new_dict ]
             for path_ in temp:
-                self.json_output += '"' + path_ + '": '
-                self.json_output += json.dumps(temp[path_])
-                self.json_output += ","
-            self.json_output = self.json_output[:-1]  # Remove the last comma
-        self.json_output += "},"
+                stack = [ new_dict ]
+                path_array = path_.split("/")
+                for idx in range(len(path_array)):
+                    key = path_array[idx]
+                    if key not in stack[-1]:
+                        if idx == len(path_array)-1:
+                            stack[-1][key] = temp[path_]
+                        else:
+                            stack[-1][key] = {}
+                            stack.append( stack[-1][key] )
+                    else:
+                        stack.append( stack[-1][key] )
+            self.json_output += json.dumps(new_dict)
+            self.json_output += ","
 
     def print_long(self, record):
         self.json_output += json.dumps(record.data) + ","
