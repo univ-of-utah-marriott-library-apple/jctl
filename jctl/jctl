@@ -151,7 +151,7 @@ class Parser:
             exit(1)
         try:
             self.record = jamf.records.class_name(args.record, case_sensitive=False)
-        except jamf.records.JamfError as e:
+        except jamf.exceptions.JamfRecordError as e:
             sys.stderr.write(f"error: {e.message}\n")
             sys.stderr.write(
                 "Please specify a valid record type:\n - "
@@ -162,7 +162,7 @@ class Parser:
         flags = 0
         if args.delete:
             flags += 1
-        if args.create:
+        if args.create is not None:
             flags += 1
         if args.sub_command:
             flags += 1
@@ -264,14 +264,23 @@ class Parser:
                 sys.stderr.write("Can't print ids and path at the same time...\n")
                 exit()
         # Process the update parameters to validate them before proceeding.
-        if args.create and args.json:
+        if args.create is not None:
             if len(args.create) == 1:
-                args.create = [self.json_str_to_dict(args.create[0])]
+                if args.json:
+                    args.create = [self.json_str_to_dict(args.create[0])]
             else:
-                sys.stderr.write(
-                    "When using -j create can only take 1 argument, the json.\n"
-                )
-                exit(1)
+                if args.json:
+                    sys.stderr.write(
+                        "When using -j create can only take 1 argument, the json.\n"
+                    )
+                    exit(1)
+                else:
+                    self.parser.print_usage()
+                    sys.stderr.write(
+                        "jctl: error: argument -c/--create: expected one or more arguments\n"
+                    )
+                    exit(1)
+
         elif args.update:
             update_processed_ = []
             for update_string_ in args.update:
@@ -498,9 +507,9 @@ def main(argv):  # noqa: C901
         )
     logger.debug(f"args: {args!r}")
     if args.config:
-        api = jamf.API(config_path=args.config)
+        jps = jamf.server.Server(config_path=args.config)
     else:
-        api = jamf.API()
+        jps = jamf.server.Server()
     # Get the main class
     rec_class = jamf.records.class_name(args.record, case_sensitive=False)
     if args.create:
@@ -528,13 +537,26 @@ def main(argv):  # noqa: C901
             for name in args.name:
                 temps = temps + all_records.recordsWithName(name)
         if args.id:
-            for id in args.id:
-                try:
-                    id = int(id)
-                except ValueError:
-                    sys.stderr.write(f"ID must be a number: {id}\n")
-                    exit(1)
-                temps = temps + [all_records.recordWithId(id)]
+            if len(args.id) == 1 and args.id[0] == "-":
+                for line in sys.stdin:
+                    print("-", line)
+                    id = -1
+                    try:
+                        id = int(line)
+                    except ValueError:
+                        if not re.match(r"^Count: ", line):
+                            sys.stderr.write(f"ID must be a number: {line}\n")
+                            exit(1)
+                    if id > 0:
+                        temps = temps + [all_records.recordWithId(id)]
+            else:
+                for id in args.id:
+                    try:
+                        id = int(id)
+                    except ValueError:
+                        sys.stderr.write(f"ID must be a number: {id}\n")
+                        exit(1)
+                    temps = temps + [all_records.recordWithId(id)]
         quick = []
         for temp in temps:
             if temp:
@@ -622,67 +644,71 @@ def main(argv):  # noqa: C901
     # Confirm Make a change
     confirmed = False
     if making_a_change:
-        confirmed = change_confirmation(args, rec_class, filtered_results, api.hostname)
+        confirmed = change_confirmation(
+            args, rec_class, filtered_results, jps.config.hostname
+        )
 
     if confirmed and args.create:
         try:
-            _ = rec_class().createNewRecord(args.create)
+            _ = rec_class().create(args.create)
         except Exception as e:
             sys.stderr.write(f"Couldn't create record: {e}\n")
     elif confirmed:
         if args.sub_command and "update_before" in args.sub_command:
             method = getattr(rec_class, args.sub_command["update_before"])
             method(rec_class, *args.sub_command["args"])
-        # For each record
-        for record in filtered_results:
-            # Delete
-            if args.delete:
-                if not args.quiet_as_a_mouse:
-                    print(f"Deleting record: {record}")
-                record.delete()
-            elif args.update:
-                success = True
-                paths = []
-                print("-----")
-                for update_list in args.update:
-                    path_ = update_list[0]
-                    paths.append(path_)
-                    value_ = update_list[1]
-                    if not args.quiet_as_a_mouse:
+        # Delete
+        if args.delete:
+            ids = []
+            for result in filtered_results:
+                ids.append(result.id)
+            rec_class().delete(ids, (not args.quiet_as_a_mouse))
+        else:
+            # For each record
+            for record in filtered_results:
+                if args.update:
+                    success = True
+                    paths = []
+                    print("-----")
+                    for update_list in args.update:
+                        path_ = update_list[0]
+                        paths.append(path_)
+                        value_ = update_list[1]
+                        if not args.quiet_as_a_mouse:
+                            try:
+                                old_ = record.get_path(path_)
+                            except jamf.records.NotFound:
+                                old_ = None
+                            if not args.quiet_as_a_mouse:
+                                print(f"Old value: {path_} = {old_}")
+                                print(f"Set value: {path_} = {value_}")
+                        success = success and record.set_path(path_, value_)
+                    if success:
                         try:
-                            old_ = record.get_path(path_)
-                        except jamf.records.NotFound:
-                            old_ = None
-                        if not args.quiet_as_a_mouse:
-                            print(f"Old value: {path_} = {old_}")
-                            print(f"Set value: {path_} = {value_}")
-                    success = success and record.set_path(path_, value_)
-                if success:
-                    try:
-                        record.save()
-                        # Fetch updated record
-                        if not args.quiet_as_a_mouse:
-                            record.refresh()
-                            for path_ in paths:
-                                new_ = record.get_path(path_)
-                                print(f"New value: {path_} = {new_}")
-                    except Exception as e:
-                        print(f"Couldn't save changed record: {e}")
-                else:
-                    print("Could not update record")
+                            record.save()
+                            # Fetch updated record
+                            if not args.quiet_as_a_mouse:
+                                record.refresh()
+                                for path_ in paths:
+                                    new_ = record.get_path(path_)
+                                    print(f"New value: {path_} = {new_}")
+                        except Exception as e:
+                            print(f"Couldn't save changed record: {e}")
+                    else:
+                        print("Could not update record")
 
-            elif args.sub_command and "update_during" in args.sub_command:
-                method = getattr(
-                    rec_class.singular_class, args.sub_command["update_during"]
-                )
-                success = method(record, *args.sub_command["args"])
-                if success:
-                    try:
-                        record.save()
-                    except Exception as e:
-                        print(f"Couldn't save changed record: {e}")
-                else:
-                    print("Sub command failed")
+                elif args.sub_command and "update_during" in args.sub_command:
+                    method = getattr(
+                        rec_class.singular_class, args.sub_command["update_during"]
+                    )
+                    success = method(record, *args.sub_command["args"])
+                    if success:
+                        try:
+                            record.save()
+                        except Exception as e:
+                            print(f"Couldn't save changed record: {e}")
+                    else:
+                        print("Sub command failed")
 
         if args.sub_command and "update_after" in args.sub_command:
             method = getattr(rec_class, args.sub_command["update_after"])
