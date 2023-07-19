@@ -493,41 +493,7 @@ def change_confirmation(args, rec_class, filtered_results, hostname):
         )
     return confirmed
 
-
-def main(argv):  # noqa: C901
-    # THERE ARE EXITS THROUGHOUT
-    logger = logging.getLogger(__name__)
-    check_version()
-    args = Parser().parse(argv)
-    if args.debug:
-        logger.setLevel(level=logging.DEBUG)
-        logger.debug(
-            "Warning, debugging output may contain passwords, tokens, "
-            "or other sensitive information!"
-        )
-    logger.debug(f"args: {args!r}")
-    if args.config:
-        jps = jamf.server.Server(config_path=args.config)
-    else:
-        jps = jamf.server.Server()
-    # Get the main class
-    rec_class = jamf.records.class_name(args.record, case_sensitive=False)
-    if args.create:
-        all_records = None
-    else:
-        all_records = rec_class()
-
-    ############################################################################
-    # What type of feedback (mutually exclusive)
-    if args.json:
-        outputer = JSONOutput(args)
-    elif args.quiet_as_a_mouse:
-        outputer = SilentOutput(args)
-    else:
-        outputer = JCTLOutput(args)
-
-    ############################################################################
-    # Quick filter records
+def quick_filter(all_records, args):
     if all_records and (args.regex or args.name or args.id):
         temps = []
         if args.regex:
@@ -568,19 +534,73 @@ def main(argv):  # noqa: C901
         sorted_results = sorted(quick)
     else:
         sorted_results = []
+    return sorted_results
 
-    ############################################################################
-    # Filter and print
-    # Filtering is slow. Some things can be printed in the same loop
-    filtered_results = []
+def print_feedback(record, args, outputer, rec_class):
+    if args.sub_command and "print_during" in args.sub_command:
+        method = getattr(rec_class.singular_class, args.sub_command["print_during"])
+        method(record, *args.sub_command["args"])
+    else:
+        outputer.print_start()
+        if args.print_id:
+            outputer.print_id(record)
+        elif args.path:
+            temp = {}
+            for path_ in args.path:
+                try:
+                    value = record.get_path(path_)
+                except jamf.records.NotFound:
+                    value = None
+                temp[path_] = value
+            outputer.print_path(record, temp)
+        elif args.long:
+            outputer.print_long(record)
+        else:
+            outputer.print_short(record)
 
+def main(argv):  # noqa: C901
+    # THERE ARE EXITS THROUGHOUT
+    logger = logging.getLogger(__name__)
+    check_version()
+    args = Parser().parse(argv)
+    if args.debug:
+        logger.setLevel(level=logging.DEBUG)
+        logger.debug(
+            "Warning, debugging output may contain passwords, tokens, "
+            "or other sensitive information!"
+        )
+    logger.debug(f"args: {args!r}")
+    if args.config:
+        jps = jamf.server.Server(config_path=args.config)
+    else:
+        jps = jamf.server.Server()
+
+    # What type of feedback (mutually exclusive)
+    if args.json:
+        outputer = JSONOutput(args)
+    elif args.quiet_as_a_mouse:
+        outputer = SilentOutput(args)
+    else:
+        outputer = JCTLOutput(args)
+
+    # Get the main class
+    rec_class = jamf.records.class_name(args.record, case_sensitive=False)
+    if args.create:
+        all_records = None
+    else:
+        all_records = rec_class()
+
+    # Quick Filter
+    sorted_results = quick_filter(all_records, args)
+
+    # Sub Command print_before
     if args.sub_command and "print_before" in args.sub_command:
         method = getattr(rec_class, args.sub_command["print_before"])
         method(rec_class, *args.sub_command["args"])
 
+    # Filter and print
+    filtered_results = []
     for record in sorted_results:
-        ########################################################################
-        # Check to see if it's filtered
         not_filtered = True
         if args.searchpath:
             for searchpath in args.searchpath:
@@ -602,30 +622,9 @@ def main(argv):  # noqa: C901
             continue
         filtered_results.append(record)
 
-        ########################################################################
-        # Print feedback
-        if args.quiet_as_a_mouse:
-            continue
-        if args.sub_command and "print_during" in args.sub_command:
-            method = getattr(rec_class.singular_class, args.sub_command["print_during"])
-            method(record, *args.sub_command["args"])
-        else:
-            outputer.print_start()
-            if args.print_id:
-                outputer.print_id(record)
-            elif args.path:
-                temp = {}
-                for path_ in args.path:
-                    try:
-                        value = record.get_path(path_)
-                    except jamf.records.NotFound:
-                        value = None
-                    temp[path_] = value
-                outputer.print_path(record, temp)
-            elif args.long:
-                outputer.print_long(record)
-            else:
-                outputer.print_short(record)
+        # filtering is slow--some things can be printed in the same loop
+        if not args.quiet_as_a_mouse:
+            print_feedback(record, args, outputer, rec_class)
 
     outputer.print_end(filtered_results)
 
@@ -641,13 +640,12 @@ def main(argv):  # noqa: C901
         making_a_change = args.delete or args.create or args.update
 
     ############################################################################
-    # Confirm Make a change
+    # Confirm make a change
     confirmed = False
     if making_a_change:
         confirmed = change_confirmation(
             args, rec_class, filtered_results, jps.config.hostname
         )
-
     if confirmed and args.create:
         try:
             _ = rec_class().create(args.create)
