@@ -202,7 +202,7 @@ class Parser:
             args_d = plural_cls.sub_commands[sub_c]["args_description"]
             if len(args.sub_command) - 1 != args_c:
                 sys.stderr.write(
-                    f"{args.record} {args.sub_command[0]} requires {args_c} arg(s), "
+                    f"{args.record} {args.sub_command[0]} requires {args_c} arg(s): "
                     f"{args_d}\n"
                 )
                 exit(1)
@@ -284,14 +284,15 @@ class Parser:
         elif args.update:
             update_processed_ = []
             for update_string_ in args.update:
-                operands = re.match("(^[^=]*)=([^=]*$)", update_string_)
+                path_parts = update_string_.split("/")
+                operands = re.match("(^[^=]*)=([^=]*$)", path_parts[-1])
                 if operands:
                     value_ = self.json_str_to_dict(operands[2])
-                    update_processed_.append([operands[1], value_])
+                    update_processed_.append(["/".join(path_parts[:-1])+"/"+operands[1], value_])
                 else:
                     if not args.quiet_as_a_mouse:
                         sys.stderr.write(
-                            f'The update string "{update_string_}" requires a single "=".\n'
+                            f'The update string "{path_parts[-1]}" requires a single "=".\n'
                         )
             args.update = update_processed_
         return args
