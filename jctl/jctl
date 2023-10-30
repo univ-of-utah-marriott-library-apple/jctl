@@ -24,7 +24,12 @@ import time
 from pprint import pprint
 
 import jamf
-from jamf.exceptions import JamfUnknownClass, JamfRecordNotFound, JamfConfigError, JamfRecordInvalidPath
+from jamf.exceptions import (
+    JamfConfigError,
+    JamfRecordInvalidPath,
+    JamfRecordNotFound,
+    JamfUnknownClass,
+)
 
 
 class Parser:
@@ -289,9 +294,7 @@ class Parser:
                 if len(split1) == 2:
                     path_ = split1[0]
                     value_ = self.json_str_to_dict(split1[1])
-                    update_processed_.append(
-                        [path_, value_]
-                    )
+                    update_processed_.append([path_, value_])
                 else:
                     if not args.quiet_as_a_mouse:
                         sys.stderr.write(

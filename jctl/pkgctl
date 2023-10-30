@@ -21,6 +21,7 @@ import sys
 import jamf
 from jamf.exceptions import JamfConfigError
 
+
 class Parser:
     def __init__(self):
         self.parser = argparse.ArgumentParser()
