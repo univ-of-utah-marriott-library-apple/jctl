@@ -24,6 +24,7 @@ import time
 from pprint import pprint
 
 import jamf
+from jamf.exceptions import JamfUnknownClass, JamfRecordNotFound, JamfConfigError, JamfRecordInvalidPath
 
 
 class Parser:
@@ -151,7 +152,7 @@ class Parser:
             exit(1)
         try:
             self.record = jamf.records.class_name(args.record, case_sensitive=False)
-        except jamf.exceptions.JamfUnknownClass as e:
+        except JamfUnknownClass as e:
             sys.stderr.write(f"error: {e.message}\n")
             sys.stderr.write(
                 "Please specify a valid record type:\n - "
@@ -284,15 +285,17 @@ class Parser:
         elif args.update:
             update_processed_ = []
             for update_string_ in args.update:
-                path_parts = update_string_.split("/")
-                operands = re.match("(^[^=]*)=([^=]*$)", path_parts[-1])
-                if operands:
-                    value_ = self.json_str_to_dict(operands[2])
-                    update_processed_.append(["/".join(path_parts[:-1])+"/"+operands[1], value_])
+                split1 = update_string_.split("=", 1)
+                if len(split1) == 2:
+                    path_ = split1[0]
+                    value_ = self.json_str_to_dict(split1[1])
+                    update_processed_.append(
+                        [path_, value_]
+                    )
                 else:
                     if not args.quiet_as_a_mouse:
                         sys.stderr.write(
-                            f'The update string "{path_parts[-1]}" requires a single "=".\n'
+                            f'The update string "{update_string_}" requires a single "=".\n'
                         )
             args.update = update_processed_
         return args
@@ -458,6 +461,7 @@ def change_confirmation(args, rec_class, filtered_results, hostname):
     else:
         change_type_ = "change"
     if args.use_the_force_luke:
+        confirmed = True
         if not args.quiet_as_a_mouse:
             print(f"Performing {change_type_} without confirmation on {hostname}.")
         if not args.andele_andele:
@@ -493,6 +497,7 @@ def change_confirmation(args, rec_class, filtered_results, hostname):
             f"{number} record{plural} on {hostname} [y/n]? "
         )
     return confirmed
+
 
 def quick_filter(all_records, args):
     if all_records and (args.regex or args.name or args.id):
@@ -537,6 +542,7 @@ def quick_filter(all_records, args):
         sorted_results = []
     return sorted_results
 
+
 def print_feedback(record, args, outputer, rec_class):
     if args.sub_command and "print_during" in args.sub_command:
         method = getattr(rec_class.singular_class, args.sub_command["print_during"])
@@ -550,7 +556,7 @@ def print_feedback(record, args, outputer, rec_class):
             for path_ in args.path:
                 try:
                     value = record.get_path(path_)
-                except jamf.exceptions.JamfRecordNotFound:
+                except JamfRecordNotFound:
                     value = None
                 temp[path_] = value
             outputer.print_path(record, temp)
@@ -558,6 +564,7 @@ def print_feedback(record, args, outputer, rec_class):
             outputer.print_long(record)
         else:
             outputer.print_short(record)
+
 
 def main(argv):  # noqa: C901
     # THERE ARE EXITS THROUGHOUT
@@ -571,10 +578,14 @@ def main(argv):  # noqa: C901
             "or other sensitive information!"
         )
     logger.debug(f"args: {args!r}")
-    if args.config:
-        jps = jamf.server.Server(config_path=args.config)
-    else:
-        jps = jamf.server.Server()
+    try:
+        if args.config:
+            jps = jamf.server.Server(config_path=args.config, debug=args.debug)
+        else:
+            jps = jamf.server.Server(prompt=True, debug=args.debug)
+    except JamfConfigError as e:
+        print(e.message)
+        exit()
 
     # What type of feedback (mutually exclusive)
     if args.json:
@@ -585,7 +596,7 @@ def main(argv):  # noqa: C901
         outputer = JCTLOutput(args)
 
     # Get the main class
-    rec_class = jamf.records.class_name(args.record, case_sensitive=False)
+    rec_class = jps.records.class_name(args.record, case_sensitive=False)
     if args.create:
         all_records = None
     else:
@@ -611,7 +622,7 @@ def main(argv):  # noqa: C901
                 if not_filtered and m:
                     try:
                         path_data = record.get_path(m[1])
-                    except jamf.exceptions.JamfRecordNotFound:
+                    except JamfRecordNotFound:
                         path_data = None
                     not_filtered = check_for_match(path_data, m[3], m[2])
                     if not not_filtered:
@@ -676,8 +687,12 @@ def main(argv):  # noqa: C901
                         if not args.quiet_as_a_mouse:
                             try:
                                 old_ = record.get_path(path_)
-                            except jamf.exceptions.JamfRecordNotFound:
-                                old_ = None
+                            # JamfRecordNotFound vs JamfRecordInvalidPath needs to be figured out
+                            # except JamfRecordNotFound:
+                            #    old_ = None
+                            except JamfRecordInvalidPath:
+                                sys.stderr.write(f"Invalid path: {path_}\n")
+                                exit(1)
                             if not args.quiet_as_a_mouse:
                                 print(f"Old value: {path_} = {old_}")
                                 print(f"Set value: {path_} = {value_}")

@@ -19,7 +19,7 @@ import re
 import sys
 
 import jamf
-
+from jamf.exceptions import JamfConfigError
 
 class Parser:
     def __init__(self):
@@ -392,10 +392,14 @@ def main(argv):
         print(f"python_jamf {jamf.version.string()} ({min_jamf_version} required)")
         exit()
     check_version()
-    if args.config:
-        jps = jamf.server.Server(config_path=args.config)
-    else:
-        jps = jamf.server.Server()
+    try:
+        if args.config:
+            jps = jamf.server.Server(config_path=args.config, debug=args.debug)
+        else:
+            jps = jamf.server.Server(prompt=True, debug=args.debug)
+    except JamfConfigError as e:
+        print(e.message)
+        exit()
     all_packages = jamf.records.Packages()
     sorted_results = get_sorted_results(args, all_packages)
     # Print package usage
