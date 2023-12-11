@@ -10,8 +10,8 @@ __author__ = "James Reynolds, Sam Forester"
 __email__ = "reynolds@biology.utah.edu, sam.forester@utah.edu"
 __copyright__ = "Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences"
 __license__ = "MIT"
-__version__ = "1.1.19"
-min_jamf_version = "0.8.3"
+__version__ = "1.1.20"
+min_jamf_version = "0.9.0"
 
 
 import argparse
@@ -23,8 +23,8 @@ import sys
 import time
 from pprint import pprint
 
-import jamf
-from jamf.exceptions import (
+import python_jamf
+from python_jamf.exceptions import (
     JamfConfigError,
     JamfRecordInvalidPath,
     JamfRecordNotFound,
@@ -36,7 +36,9 @@ class Parser:
     def __init__(self):
         example_text = "For examples please see https://github.com/univ-of-utah-marriott-library-apple/jctl/wiki/jctl"
 
-        self.valid_jamf_records = [x.lower() for x in jamf.records.valid_records()]
+        self.valid_jamf_records = [
+            x.lower() for x in python_jamf.records.valid_records()
+        ]
         self.parser = argparse.ArgumentParser(epilog=example_text)
         # https://docs.python.org/3/library/argparse.html
         self.parser.add_argument(
@@ -145,7 +147,7 @@ class Parser:
         if args.version:
             sys.stderr.write("jctl " + __version__ + "\n")
             sys.stderr.write(
-                f"python_jamf {jamf.version.string()} ({min_jamf_version} required)\n"
+                f"python_jamf {python_jamf.version.string()} ({min_jamf_version} required)\n"
             )
             exit(1)
         if args.record is None:
@@ -156,7 +158,9 @@ class Parser:
             )
             exit(1)
         try:
-            self.record = jamf.records.class_name(args.record, case_sensitive=False)
+            self.record = python_jamf.records.class_name(
+                args.record, case_sensitive=False
+            )
         except JamfUnknownClass as e:
             sys.stderr.write(f"error: {e.message}\n")
             sys.stderr.write(
@@ -182,7 +186,9 @@ class Parser:
             exit(1)
         # Validate Subcommands
         if args.sub_command is not None:
-            plural_cls = jamf.records.class_name(args.record, case_sensitive=False)
+            plural_cls = python_jamf.records.class_name(
+                args.record, case_sensitive=False
+            )
             singlar_cls = plural_cls.singular_class
             # Validate the class has subcommands
             if not hasattr(plural_cls, "sub_commands"):
@@ -305,7 +311,7 @@ class Parser:
 
 
 def check_version():
-    python_jamf_version = jamf.version.jamf_version_up_to(min_jamf_version)
+    python_jamf_version = python_jamf.version.jamf_version_up_to(min_jamf_version)
     if python_jamf_version != min_jamf_version:
         sys.stderr.write(
             f"jctl requires python-jamf {min_jamf_version} or newer. "
@@ -583,9 +589,9 @@ def main(argv):  # noqa: C901
     logger.debug(f"args: {args!r}")
     try:
         if args.config:
-            jps = jamf.server.Server(config_path=args.config, debug=args.debug)
+            jps = python_jamf.server.Server(config_path=args.config, debug=args.debug)
         else:
-            jps = jamf.server.Server(prompt=True, debug=args.debug)
+            jps = python_jamf.server.Server(prompt=True, debug=args.debug)
     except JamfConfigError as e:
         print(e.message)
         exit()
