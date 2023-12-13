@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - jctl "-i -" will obtain id's from stdin
 
 ### Changed
+- Requires python-jamf 0.9.0
 - jctl import jamf.exceptions
 - jctl Rename jamf to python_jamf
 - jctl --create can now take a name or json
