@@ -196,14 +196,13 @@ def process_computergroups_promotion(item, package, new_package, rec):
     return success
 
 
-def process_package_promotion(item, packages):
-    package = item[2]
-    while True:
+def process_package_promotion(items, packages):
+    loop = True
+    while loop:
         answer = ""
         choices = list(map(str, range(1, len(packages) + 1)))
         while answer not in choices + ["b", "x", "q"]:
-            class_name = eval("python_jamf." + item[0]).singular_class.__name__
-            print(f"Set the {class_name} named {item[1]} to which package?")
+            print("Pick the target package:")
             index = 1
             for val in packages:
                 print(f"  [{index}] {val}")
@@ -215,15 +214,18 @@ def process_package_promotion(item, packages):
         elif answer == "b":
             return False
         else:
-            new_package = packages[int(answer) - 1]
-            the_class = python_jamf.records.class_name(item[0])
-            rec = the_class().find(item[1])
-            if item[0] == "PatchPolicies":
-                return process_patchpolicies_promotion(item, new_package, rec)
-            elif item[0] == "Policies":
-                return process_policies_promotion(item, package, new_package, rec)
-            elif item[0] == "ComputerGroups":
-                return process_computergroups_promotion(item, package, new_package, rec)
+            loop = False
+    for item in items:
+        package = item[2]
+        new_package = packages[int(answer) - 1]
+        the_class = python_jamf.records.class_name(item[0])
+        rec = the_class().find(item[1])
+        if item[0] == "PatchPolicies":
+            process_patchpolicies_promotion(item, new_package, rec)
+        elif item[0] == "Policies":
+            process_policies_promotion(item, package, new_package, rec)
+        elif item[0] == "ComputerGroups":
+            process_computergroups_promotion(item, package, new_package, rec)
 
 
 def package_group_items(packages):
@@ -253,21 +255,30 @@ def process_package_group(group, packages):
     while True:
         (item_list, text) = package_group_items(packages)
         loop = True
+        choices = list(map(str, range(1, len(item_list) + 1))) + ["b", "x", "q"]
         while loop:
-            choices = list(map(str, range(1, len(item_list) + 1))) + ["b", "x", "q"]
-            answer = ""
-            while answer not in choices:
+            answer = [""]
+            found = False
+            while not found:
                 print(group)
                 print(text)
-                answer = input("Enter a number, [b]ack, or e[x]it/[q]uit: ").lower()
-            if answer == "x" or answer == "q":
-                exit()
-            elif answer == "b":
-                return False
-            else:
-                item = item_list[int(answer) - 1]
-                _ = process_package_promotion(item, packages)
-                loop = False
+                answer = input(
+                    "Enter one or more numbers, [b]ack, or e[x]it/[q]uit: "
+                ).lower()
+                found = True
+                for aa in answer.split():
+                    if aa not in choices:
+                        found = False
+            # Check for exit and back before processing numbers
+            for aa in answer.split():
+                if aa == "x" or aa == "q":
+                    exit()
+                elif aa == "b":
+                    return False
+            # User did not exit, so go ahead and do numbers
+            items = [item_list[int(aa) - 1] for aa in answer.split()]
+            process_package_promotion(items, packages)
+            loop = False
 
 
 def print_group(group, children, related, group_index, choices_len):
