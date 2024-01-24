@@ -32,4 +32,5 @@ setuptools.setup(
     ],
     python_requires=">=3.7",
     install_requires=["python-jamf>=0.9.0"],
+    py_modules=["jctl"],
 )
