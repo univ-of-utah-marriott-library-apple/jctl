@@ -5,6 +5,12 @@ in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This project will (try to) adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.22] -- 2024-01-29
+
+- update_asset_tags.py: renamed jamf to python_jamf
+- patch.py: renamed jamf to python_jamf
+- setup.py: add py_modules key
+
 ## [1.1.21] -- 2024-01-03
 
 - pkgctl updates multiple policies/groups at once
