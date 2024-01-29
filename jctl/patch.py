@@ -47,7 +47,7 @@ import pathlib
 import pprint
 import sys
 
-import jamf
+import python_jamf
 from python_jamf.package import Package
 
 
