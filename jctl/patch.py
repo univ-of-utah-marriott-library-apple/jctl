@@ -48,7 +48,7 @@ import pprint
 import sys
 
 import jamf
-from jamf.package import Package
+from python_jamf.package import Package
 
 
 class Parser:
@@ -165,7 +165,7 @@ class Parser:
 
 
 def check_version():
-    python_jamf_version = jamf.version.jamf_version_up_to(min_jamf_version)
+    python_jamf_version = python_jamf.version.jamf_version_up_to(min_jamf_version)
     if python_jamf_version != min_jamf_version:
         print(
             f"patch.py requires python-jamf {min_jamf_version} or newer. "
@@ -270,7 +270,7 @@ def list_softwaretitle_policy_versions(api, name):
 
 def find_softwaretitle(api, name, details=True):
     """
-    :param api:         jamf.api.API object
+    :param api:         python_jamf.api.API object
     :param name:        name of softwaretitle
     :param details:     if False, return simple (id + name) (default: True)
 
@@ -397,7 +397,7 @@ def main(argv):
     args = Parser().parse(argv)
     logger.debug(f"args: {args!r}")
 
-    api = jamf.API()
+    api = python_jamf.API()
 
     if args.cmd == "list":
         if args.versions:
@@ -441,11 +441,11 @@ def main(argv):
         #     info = pkg.info
         # except Exception:
         #     raise SystemExit(f"invalid package: {args.path!r}")
-        admin = jamf.admin.JamfAdmin()
-        # admin = jamf.Admin()
+        admin = python_jamf.admin.JamfAdmin()
+        # admin = python_jamf.Admin()
         try:
             uploaded = admin.add(pkg)
-        except jamf.admin.DuplicatePackageError as e:
+        except python_jamf.admin.DuplicatePackageError as e:
             if not args.force:
                 raise e
             uploaded = admin.find(pkg.name)
@@ -455,10 +455,10 @@ def main(argv):
         path = pathlib.Path(args.name)
         if path.name != str(path):
             raise SystemExit("must specify package name not path")
-        admin = jamf.JamfAdmin()
+        admin = python_jamf.JamfAdmin()
         try:
             pkg = admin.find(path.name)
-        except jamf.admin.MissingPackageError:
+        except python_jamf.admin.MissingPackageError:
             logger.error(f"package already removed: {path.name}")
         else:
             admin.delete(pkg)
