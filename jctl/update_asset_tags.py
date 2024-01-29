@@ -11,14 +11,14 @@ __license__ = "MIT"
 import csv
 import logging
 
-import jamf
+import python_jamf
 
 # create inventory lookup for each asset tag by serial number
 with open("asset_inventory.csv", "r") as f:
     inventory = {r["SERIAL_NUMBER"]: r["ASSET_TAG"] for r in csv.DictReader(f)}
 
 # iterate all Jamf computer records
-for computer in jamf.Computers():
+for computer in python_jamf.Computers():
     # get serial number from Jamf computer record
     serial_number = computer.data["general"]["serial_number"]
     try:
