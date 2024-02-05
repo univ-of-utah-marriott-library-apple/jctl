@@ -10,7 +10,7 @@ __author__ = "James Reynolds, Sam Forester"
 __email__ = "reynolds@biology.utah.edu, sam.forester@utah.edu"
 __copyright__ = "Copyright (c) 2020 University of Utah, Marriott Library & School of Biological Sciences"
 __license__ = "MIT"
-__version__ = "1.1.22"
+__version__ = "1.1.23"
 min_jamf_version = "0.9.0"
 
 
@@ -336,13 +336,12 @@ def check_for_match(path_data, search, op):
                 return True
         return False
     elif isinstance(path_data, list):
-        # I'm not sure this is the best way to handle arrays...
+        found = False
         for i in path_data:
             result = check_for_match(i, search, op)
             if result:
-                return True
-            else:
-                return False
+                found = True
+        return found
     elif path_data is None and search == "None":
         return op == "==" or op == "~="
     elif path_data is False and search == "False":
@@ -631,7 +630,7 @@ def main(argv):  # noqa: C901
                 if not_filtered and m:
                     try:
                         path_data = record.get_path(m[1])
-                    except JamfRecordNotFound:
+                    except (JamfRecordNotFound, JamfRecordInvalidPath):
                         path_data = None
                     not_filtered = check_for_match(path_data, m[3], m[2])
                     if not not_filtered:
