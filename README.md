@@ -1,8 +1,10 @@
 # jctl
 
+**The `jctl` and `pkgctl` cli tools are being moved into [`python-jamf`](https://github.com/univ-of-utah-marriott-library-apple/python-jamf). Once python-jamf 0.10.0 is released this project will be archived! ***
+
 ## Introduction
 
-`jctl` is a command line tool that performs CRUD (Create/Read/Update/Delete) operations on a [Jamf Pro or Jamf Cloud](https://www.jamf.com/) server. It can automate repetitive tasks and provide options not available in the web GUI. It uses and is the primary driver of [`python-jamf`](https://github.com/univ-of-utah-marriott-library-apple/python-jamf), which is a Python 3 module for the [Jamf Pro Classic API](https://www.jamf.com/resources/videos/an-introduction-to-the-classic-api/). 
+`jctl` is a command line tool that performs CRUD (Create/Read/Update/Delete) operations on a [Jamf Pro or Jamf Cloud](https://www.jamf.com/) server. It can automate repetitive tasks and provide options not available in the web GUI. It uses and is the primary driver of [`python-jamf`](https://github.com/univ-of-utah-marriott-library-apple/python-jamf), which is a Python 3 module for the [Jamf Pro Classic API](https://www.jamf.com/resources/videos/an-introduction-to-the-classic-api/).
 
 There are a few other tools that are part of this project. `pkgctl` is automates various operations with packages, such as promotion and creating patch definitions. `patch.py` is a deprecated script designed to automate the patching process. It is still part of the project because it can do a few things that `jctl` can't. However, it is not being tested. `update_asset_tags.py` was demoed at the 2021 JNUC presentation [_Turn 1000 clicks into 1 with python-jamf and jctl_](https://www.youtube.com/watch?v=2YLriNwyP3s). We decided to include it here. It is not being tested either.
 
