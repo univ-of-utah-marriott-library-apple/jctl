@@ -1,6 +1,6 @@
 # jctl
 
-**The `jctl` and `pkgctl` cli tools are being moved into [`python-jamf`](https://github.com/univ-of-utah-marriott-library-apple/python-jamf). Once python-jamf 0.10.0 is released this project will be archived!**
+**The `jctl` and `pkgctl` cli tools have been moved into [`python-jamf`](https://github.com/univ-of-utah-marriott-library-apple/python-jamf). Install jctl by installing python-jamf.**
 
 ## Introduction
 
